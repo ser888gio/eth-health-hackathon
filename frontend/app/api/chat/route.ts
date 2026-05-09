@@ -24,6 +24,15 @@ type RetrievedChunk = {
   rank: number;
 };
 
+type SampleMetric = {
+  sampleId: string;
+  coveragePercent: number | null;
+  onTargetPercent: number | null;
+  targetRegionValue: number | null;
+  targetRegionCoveragePercent: number | null;
+  conflicts: string[];
+};
+
 type ChatRequestBody = {
   message?: unknown;
   sampleId?: unknown;
@@ -149,6 +158,147 @@ async function listSampleIds(): Promise<string[]> {
   }
 }
 
+function parseNumber(value: string | null): number | null {
+  if (!value) return null;
+  const numeric = Number(value.replace(/,/g, ""));
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function metricFromContent(content: string, label: string): number | null {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = content.match(new RegExp(`${escaped}:\\s*([\\d,.]+)`, "i"));
+  return parseNumber(match?.[1] ?? null);
+}
+
+function chooseCoveragePercent(content: string): number | null {
+  return metricFromContent(content, "100x") ?? metricFromContent(content, "50x") ?? metricFromContent(content, "25x");
+}
+
+function addMetricValue(
+  metrics: Map<string, SampleMetric>,
+  sampleId: string,
+  key: keyof Omit<SampleMetric, "sampleId" | "conflicts">,
+  value: number | null,
+) {
+  if (value === null) return;
+  const sample = metrics.get(sampleId) ?? {
+    sampleId,
+    coveragePercent: null,
+    onTargetPercent: null,
+    targetRegionValue: null,
+    targetRegionCoveragePercent: null,
+    conflicts: [],
+  };
+  const current = sample[key];
+  if (current !== null && Math.abs(current - value) > 0.01) {
+    sample.conflicts.push(`${key} has conflicting values (${current} and ${value})`);
+  }
+  sample[key] = current === null ? value : Math.max(current, value);
+  metrics.set(sampleId, sample);
+}
+
+function addTargetRegionValue(
+  metrics: Map<string, SampleMetric>,
+  targetRegionPriorities: Map<string, number>,
+  sampleId: string,
+  value: number | null,
+  priority: number,
+) {
+  if (value === null) return;
+  const currentPriority = targetRegionPriorities.get(sampleId) ?? 0;
+  if (priority < currentPriority) return;
+
+  if (priority > currentPriority) {
+    const sample = metrics.get(sampleId) ?? {
+      sampleId,
+      coveragePercent: null,
+      onTargetPercent: null,
+      targetRegionValue: null,
+      targetRegionCoveragePercent: null,
+      conflicts: [],
+    };
+    sample.targetRegionValue = value;
+    metrics.set(sampleId, sample);
+    targetRegionPriorities.set(sampleId, priority);
+    return;
+  }
+
+  addMetricValue(metrics, sampleId, "targetRegionValue", value);
+}
+
+async function listSampleDashboardData(): Promise<{ sampleIds: string[]; sampleMetrics: SampleMetric[] }> {
+  const client = new Client(DB_CONFIG);
+  await client.connect();
+  try {
+    await ensureCitationColumns(client);
+    const res = await client.query(
+      `SELECT content, metadata
+       FROM documents
+       WHERE metadata->>'sample_id' IS NOT NULL
+         AND metadata->>'sample_id' <> ''
+       ORDER BY metadata->>'sample_id', COALESCE(metadata->>'report_type', ''), COALESCE(chunk_index, 0), id`
+    );
+    const sampleIds = new Set<string>();
+    const metrics = new Map<string, SampleMetric>();
+    const targetRegionPriorities = new Map<string, number>();
+
+    for (const row of res.rows as Array<{ content: string; metadata: unknown }>) {
+      const metadata = cleanMetadata(row.metadata);
+      const sampleId = metadataString(metadata, "sample_id");
+      if (!sampleId) continue;
+      sampleIds.add(sampleId);
+      const reportType = metadataString(metadata, "report_type")?.toLowerCase() ?? "";
+      const content = row.content ?? "";
+
+      if (reportType.includes("ontarget-mapping")) {
+        addMetricValue(metrics, sampleId, "onTargetPercent", metricFromContent(content, "onTarget"));
+      }
+
+      if (reportType.includes("target-region-coverage")) {
+        addMetricValue(metrics, sampleId, "coveragePercent", chooseCoveragePercent(content));
+        addMetricValue(metrics, sampleId, "targetRegionCoveragePercent", metricFromContent(content, "200x"));
+        addTargetRegionValue(
+          metrics,
+          targetRegionPriorities,
+          sampleId,
+          metricFromContent(content, "Coverage 10% quantile"),
+          1,
+        );
+      }
+
+      if (reportType.includes("sample_summary") || /low coverage region count/i.test(content)) {
+        addTargetRegionValue(
+          metrics,
+          targetRegionPriorities,
+          sampleId,
+          metricFromContent(content, "low coverage region count"),
+          2,
+        );
+      }
+    }
+
+    for (const sampleId of sampleIds) {
+      if (!metrics.has(sampleId)) {
+        metrics.set(sampleId, {
+          sampleId,
+          coveragePercent: null,
+          onTargetPercent: null,
+          targetRegionValue: null,
+          targetRegionCoveragePercent: null,
+          conflicts: [],
+        });
+      }
+    }
+
+    return {
+      sampleIds: Array.from(sampleIds).sort((a, b) => a.localeCompare(b)),
+      sampleMetrics: Array.from(metrics.values()).sort((a, b) => a.sampleId.localeCompare(b.sampleId)),
+    };
+  } finally {
+    await client.end();
+  }
+}
+
 async function retrieveSampleContext(sampleId: string): Promise<RetrievedChunk[]> {
   const client = new Client(DB_CONFIG);
   await client.connect();
@@ -259,11 +409,17 @@ ${context}`;
 
 export async function GET() {
   try {
-    const sampleIds = await listSampleIds();
-    return NextResponse.json({ sampleIds });
+    const dashboardData = await listSampleDashboardData();
+    return NextResponse.json(dashboardData);
   } catch (err) {
-    console.error("Sample ID listing error:", err);
-    return NextResponse.json({ sampleIds: [] }, { status: 200 });
+    console.error("Sample dashboard listing error:", err);
+    try {
+      const sampleIds = await listSampleIds();
+      return NextResponse.json({ sampleIds, sampleMetrics: [] }, { status: 200 });
+    } catch (fallbackErr) {
+      console.error("Sample ID fallback listing error:", fallbackErr);
+      return NextResponse.json({ sampleIds: [], sampleMetrics: [] }, { status: 200 });
+    }
   }
 }
 

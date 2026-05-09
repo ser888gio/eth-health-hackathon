@@ -1,6 +1,6 @@
 "use client";
 
-import { Children, isValidElement, useEffect, useRef, useState, type ReactNode } from "react";
+import { Children, isValidElement, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -39,9 +39,35 @@ type PendingNote = {
   targetType: TaskTargetType;
 };
 
+type SampleMetric = {
+  sampleId: string;
+  coveragePercent: number | null;
+  onTargetPercent: number | null;
+  targetRegionValue: number | null;
+  targetRegionCoveragePercent: number | null;
+  conflicts?: string[];
+};
+
+type DashboardCategory = "good" | "bad" | "conflicting";
+
+type DashboardThresholds = {
+  coveragePercent: number;
+  onTargetPercent: number;
+  targetRegionValue: number;
+  targetRegionCoveragePercent: number;
+};
+
 const TODO_STORAGE_KEY = "clinical-chat-tasks-v1";
 const DEFAULT_SEVERITY = 3;
 const SEVERITY_OPTIONS = [1, 2, 3, 4, 5];
+const DEFAULT_DASHBOARD_THRESHOLDS: DashboardThresholds = {
+  coveragePercent: 75,
+  onTargetPercent: 75,
+  targetRegionValue: 200,
+  targetRegionCoveragePercent: 75,
+};
+const PERCENT_BORDERLINE_DELTA = 2;
+const VALUE_BORDERLINE_DELTA = 5;
 
 const FALLBACK_SAMPLE_IDS = ["SG063-LPA", "SG220-LPA", "SG222-LPA", "17br088-1-Run1"];
 const SAMPLE_IDS = FALLBACK_SAMPLE_IDS;
@@ -174,6 +200,113 @@ function normalizeTask(task: Partial<TodoTask>): TodoTask | null {
     createdAt: String(task.createdAt),
     completed: Boolean(task.completed),
   };
+}
+
+function normalizeSampleMetric(metric: Partial<SampleMetric>): SampleMetric | null {
+  if (!metric.sampleId || typeof metric.sampleId !== "string") return null;
+
+  return {
+    sampleId: metric.sampleId,
+    coveragePercent: normalizeNullableNumber(metric.coveragePercent),
+    onTargetPercent: normalizeNullableNumber(metric.onTargetPercent),
+    targetRegionValue: normalizeNullableNumber(metric.targetRegionValue),
+    targetRegionCoveragePercent: normalizeNullableNumber(metric.targetRegionCoveragePercent),
+    conflicts: Array.isArray(metric.conflicts)
+      ? metric.conflicts.filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+      : [],
+  };
+}
+
+function normalizeNullableNumber(value: unknown): number | null {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function formatMetricValue(value: number | null, suffix = "") {
+  if (value === null) return "Missing";
+  const rounded = Math.abs(value) >= 100 ? Math.round(value) : Math.round(value * 10) / 10;
+  return `${rounded}${suffix}`;
+}
+
+function isNearThreshold(value: number, threshold: number, delta: number) {
+  return Math.abs(value - threshold) <= delta;
+}
+
+function classifySample(metric: SampleMetric, thresholds: DashboardThresholds): DashboardCategory {
+  const { coveragePercent, onTargetPercent, targetRegionValue, targetRegionCoveragePercent } = metric;
+  const missingRequired =
+    coveragePercent === null ||
+    onTargetPercent === null ||
+    targetRegionValue === null ||
+    targetRegionCoveragePercent === null;
+  const hasConflict = Boolean(metric.conflicts?.length);
+
+  if (missingRequired || hasConflict) return "conflicting";
+  if (
+    coveragePercent === null ||
+    onTargetPercent === null ||
+    targetRegionValue === null ||
+    targetRegionCoveragePercent === null
+  ) {
+    return "conflicting";
+  }
+
+  const borderline =
+    isNearThreshold(coveragePercent, thresholds.coveragePercent, PERCENT_BORDERLINE_DELTA) ||
+    isNearThreshold(onTargetPercent, thresholds.onTargetPercent, PERCENT_BORDERLINE_DELTA) ||
+    isNearThreshold(targetRegionValue, thresholds.targetRegionValue, VALUE_BORDERLINE_DELTA) ||
+    isNearThreshold(
+      targetRegionCoveragePercent,
+      thresholds.targetRegionCoveragePercent,
+      PERCENT_BORDERLINE_DELTA,
+    );
+
+  if (borderline) return "conflicting";
+
+  if (
+    coveragePercent < thresholds.coveragePercent ||
+    onTargetPercent < thresholds.onTargetPercent ||
+    targetRegionValue > thresholds.targetRegionValue ||
+    targetRegionCoveragePercent < thresholds.targetRegionCoveragePercent
+  ) {
+    return "bad";
+  }
+
+  return "good";
+}
+
+function parseDashboardSuggestion(prompt: string, thresholds: DashboardThresholds): DashboardThresholds | null {
+  const text = prompt.toLowerCase();
+  const percentPattern = "(?:over|above|at least)\\s+(\\d+(?:\\.\\d+)?)\\s*(?:percent|%)?";
+  const underPattern = "(?:under|below|less than)\\s+(\\d+(?:\\.\\d+)?)";
+  const next = { ...thresholds };
+  let changed = false;
+
+  const targetRegionCoverage = text.match(new RegExp(`target\\s+region\\s+coverage\\s+${percentPattern}`));
+  if (targetRegionCoverage) {
+    next.targetRegionCoveragePercent = Number(targetRegionCoverage[1]);
+    changed = true;
+  }
+
+  const onTarget = text.match(new RegExp(`on[-\\s]?target\\s+${percentPattern}`));
+  if (onTarget) {
+    next.onTargetPercent = Number(onTarget[1]);
+    changed = true;
+  }
+
+  const targetRegionValue = text.match(new RegExp(`target\\s+region\\s+${underPattern}`));
+  if (targetRegionValue && !/coverage/.test(text.slice(Math.max(0, targetRegionValue.index ?? 0), (targetRegionValue.index ?? 0) + 32))) {
+    next.targetRegionValue = Number(targetRegionValue[1]);
+    changed = true;
+  }
+
+  const coverage = text.match(new RegExp(`(?:^|\\b)coverage\\s+${percentPattern}`));
+  if (coverage && !/on[-\s]?target\s+/.test(text) && !/target\s+region\s+coverage/.test(text)) {
+    next.coveragePercent = Number(coverage[1]);
+    changed = true;
+  }
+
+  return changed ? next : null;
 }
 
 function IdAction({
@@ -381,11 +514,29 @@ export default function ChatPage() {
   const [busy, setBusy] = useState(false);
   const [sampleIds, setSampleIds] = useState<string[]>(FALLBACK_SAMPLE_IDS);
   const [selectedSampleId, setSelectedSampleId] = useState(FALLBACK_SAMPLE_IDS[0]);
+  const [sampleMetrics, setSampleMetrics] = useState<SampleMetric[]>([]);
+  const [dashboardStatus, setDashboardStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [dashboardThresholds, setDashboardThresholds] = useState<DashboardThresholds>(DEFAULT_DASHBOARD_THRESHOLDS);
+  const [suggestionInput, setSuggestionInput] = useState("");
+  const [suggestionStatus, setSuggestionStatus] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const active = conversations.find((c) => c.id === activeId) ?? conversations[0];
   const messages = active.messages;
+  const dashboardGroups = useMemo(() => {
+    const groups: Record<DashboardCategory, SampleMetric[]> = {
+      good: [],
+      bad: [],
+      conflicting: [],
+    };
+
+    sampleMetrics.forEach((metric) => {
+      groups[classifySample(metric, dashboardThresholds)].push(metric);
+    });
+
+    return groups;
+  }, [sampleMetrics, dashboardThresholds]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -401,16 +552,26 @@ export default function ChatPage() {
     async function loadSampleIds() {
       try {
         const res = await fetch("/api/chat", { method: "GET" });
-        if (!res.ok) return;
+        if (!res.ok) {
+          setDashboardStatus("error");
+          return;
+        }
         const payload = await res.json();
         const ids = Array.isArray(payload.sampleIds)
           ? payload.sampleIds.filter((id: unknown): id is string => typeof id === "string" && id.trim().length > 0)
           : [];
-        if (cancelled || ids.length === 0) return;
+        const metrics = Array.isArray(payload.sampleMetrics)
+          ? payload.sampleMetrics.map(normalizeSampleMetric).filter(Boolean) as SampleMetric[]
+          : [];
+        if (cancelled) return;
+        setDashboardStatus("ready");
+        setSampleMetrics(metrics);
+        if (ids.length === 0) return;
 
         setSampleIds(ids);
         setSelectedSampleId((current) => (ids.includes(current) ? current : ids[0]));
       } catch {
+        setDashboardStatus("error");
         // Keep the fallback IDs when the database is not available yet.
       }
     }
@@ -756,6 +917,24 @@ export default function ChatPage() {
     );
   }
 
+  function applyDashboardSuggestion() {
+    const parsed = parseDashboardSuggestion(suggestionInput, dashboardThresholds);
+    if (!parsed) {
+      setSuggestionStatus("No supported threshold found.");
+      return;
+    }
+
+    setDashboardThresholds(parsed);
+    setSuggestionInput("");
+    setSuggestionStatus("Dashboard thresholds updated.");
+  }
+
+  function resetDashboardThresholds() {
+    setDashboardThresholds(DEFAULT_DASHBOARD_THRESHOLDS);
+    setSuggestionInput("");
+    setSuggestionStatus("Default thresholds restored.");
+  }
+
   return (
     <div className="gpt-shell">
       <aside className="gpt-sidebar">
@@ -1022,7 +1201,133 @@ export default function ChatPage() {
             ))}
           </div>
         )}
+        <SampleDashboard
+          groups={dashboardGroups}
+          status={dashboardStatus}
+          thresholds={dashboardThresholds}
+          suggestionInput={suggestionInput}
+          suggestionStatus={suggestionStatus}
+          onSuggestionInput={setSuggestionInput}
+          onApplySuggestion={applyDashboardSuggestion}
+          onResetThresholds={resetDashboardThresholds}
+        />
       </aside>
     </div>
+  );
+}
+
+function SampleDashboard({
+  groups,
+  status,
+  thresholds,
+  suggestionInput,
+  suggestionStatus,
+  onSuggestionInput,
+  onApplySuggestion,
+  onResetThresholds,
+}: {
+  groups: Record<DashboardCategory, SampleMetric[]>;
+  status: "loading" | "ready" | "error";
+  thresholds: DashboardThresholds;
+  suggestionInput: string;
+  suggestionStatus: string;
+  onSuggestionInput: (value: string) => void;
+  onApplySuggestion: () => void;
+  onResetThresholds: () => void;
+}) {
+  const total = groups.good.length + groups.bad.length + groups.conflicting.length;
+
+  return (
+    <section className="gpt-sample-dashboard" aria-label="Sample QC dashboard">
+      <div className="gpt-dashboard-header">
+        <span>Sample QC</span>
+        <b>{total}</b>
+      </div>
+
+      <div className="gpt-dashboard-counts" aria-label="Sample QC categories">
+        <span className="good">Good {groups.good.length}</span>
+        <span className="bad">Bad {groups.bad.length}</span>
+        <span className="conflicting">Conflicting {groups.conflicting.length}</span>
+      </div>
+
+      <div className="gpt-thresholds" aria-label="Active QC thresholds">
+        <span>Coverage &gt;= {thresholds.coveragePercent}%</span>
+        <span>On target &gt;= {thresholds.onTargetPercent}%</span>
+        <span>Target &lt;= {thresholds.targetRegionValue}</span>
+        <span>Target cov &gt;= {thresholds.targetRegionCoveragePercent}%</span>
+      </div>
+
+      <form
+        className="gpt-dashboard-suggestion"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onApplySuggestion();
+        }}
+      >
+        <label htmlFor="dashboard-suggestion">Suggestion</label>
+        <div>
+          <input
+            id="dashboard-suggestion"
+            value={suggestionInput}
+            placeholder="coverage over 85 percent"
+            onChange={(event) => onSuggestionInput(event.target.value)}
+          />
+          <button type="submit" disabled={!suggestionInput.trim()}>
+            Apply
+          </button>
+        </div>
+        <button className="gpt-dashboard-reset" type="button" onClick={onResetThresholds}>
+          Reset thresholds
+        </button>
+        {suggestionStatus ? <p>{suggestionStatus}</p> : null}
+      </form>
+
+      {status === "loading" ? <p className="gpt-dashboard-empty">Loading sample metrics...</p> : null}
+      {status === "error" ? <p className="gpt-dashboard-empty error">Sample metrics are unavailable.</p> : null}
+      {status === "ready" && total === 0 ? (
+        <p className="gpt-dashboard-empty">No sample metrics found in the knowledge base.</p>
+      ) : null}
+      {status === "ready" && total > 0 ? (
+        <div className="gpt-dashboard-groups">
+          <SampleDashboardGroup title="Good" category="good" samples={groups.good} />
+          <SampleDashboardGroup title="Bad" category="bad" samples={groups.bad} />
+          <SampleDashboardGroup title="Conflicting" category="conflicting" samples={groups.conflicting} />
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function SampleDashboardGroup({
+  title,
+  category,
+  samples,
+}: {
+  title: string;
+  category: DashboardCategory;
+  samples: SampleMetric[];
+}) {
+  return (
+    <section className={`gpt-dashboard-group ${category}`}>
+      <h3>
+        <span>{title}</span>
+        <b>{samples.length}</b>
+      </h3>
+      {samples.length === 0 ? (
+        <p>No samples</p>
+      ) : (
+        samples.map((sample) => (
+          <article className="gpt-dashboard-sample" key={sample.sampleId}>
+            <strong>{sample.sampleId}</strong>
+            <div className="gpt-dashboard-metrics">
+              <span title="Target-region coverage">Cov {formatMetricValue(sample.coveragePercent, "%")}</span>
+              <span title="On-target mapping">Map {formatMetricValue(sample.onTargetPercent, "%")}</span>
+              <span title="Target region value">Target {formatMetricValue(sample.targetRegionValue)}</span>
+              <span title="Target-region coverage at 200x">TRC {formatMetricValue(sample.targetRegionCoveragePercent, "%")}</span>
+            </div>
+          </article>
+        ))
+      )}
+    </section>
   );
 }
