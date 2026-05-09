@@ -51,7 +51,7 @@ def _gemini_embed(chunks: list[str]) -> list[list[float]]:
 
 
 def _hf_embed(chunks: list[str], model) -> list[list[float]]:
-    return model.encode(chunks, show_progress_bar=False, batch_size=64).tolist()
+    return model.encode(chunks, show_progress_bar=True, batch_size=128, convert_to_numpy=True).tolist()
 
 
 def load_embedder():
@@ -67,8 +67,18 @@ def load_embedder():
             print(f"Gemini unavailable ({e}), falling back to HuggingFace …")
 
     print(f"Embedder: HuggingFace {HF_MODEL_NAME}")
+    import torch
     from sentence_transformers import SentenceTransformer
-    model = SentenceTransformer(HF_MODEL_NAME)
+
+    if torch.cuda.is_available():
+        device = "cuda"
+    elif torch.backends.mps.is_available():
+        device = "mps"
+    else:
+        device = "cpu"
+    print(f"Device: {device}")
+
+    model = SentenceTransformer(HF_MODEL_NAME, device=device)
     return (lambda chunks: _hf_embed(chunks, model), "huggingface")
 
 
