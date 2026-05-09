@@ -27,7 +27,7 @@ def main(pdf_path: str = "report.pdf", audience: str = "lab") -> None:
     print(f"[2/5] Summarizing for audience='{audience}'...")
     summary = summarize(report, audience=audience)
 
-    print(f"[3/5] Generating podcast script...")
+    print("[3/5] Generating podcast script...")
     script = generate_script(summary, audience=audience)
     print(f"      Script has {len(script)} turns")
 

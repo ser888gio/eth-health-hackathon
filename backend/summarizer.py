@@ -89,7 +89,7 @@ def summarize(report: dict, audience: str = "lab") -> dict:
         ),
     )
 
-    raw = _strip_fences(response.text)
+    raw = _strip_fences(response.text or "")
     result = json.loads(raw)
 
     tmp = tempfile.NamedTemporaryFile(
