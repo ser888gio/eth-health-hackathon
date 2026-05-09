@@ -23,6 +23,7 @@ type TodoTask = {
   targetId: string;
   targetType: TaskTargetType;
   note: string;
+  severity: number;
   createdAt: string;
   completed: boolean;
 };
@@ -33,6 +34,8 @@ type PendingNote = {
 };
 
 const TODO_STORAGE_KEY = "clinical-chat-tasks-v1";
+const DEFAULT_SEVERITY = 3;
+const SEVERITY_OPTIONS = [1, 2, 3, 4, 5];
 
 const SAMPLE_IDS = ["SG063-LPA", "SG220-LPA", "17br088-1-Run1"];
 const SAMPLE_ID_SET = new Set(SAMPLE_IDS.map((id) => id.toLowerCase()));
@@ -81,6 +84,27 @@ function targetTypeFor(token: string): TaskTargetType | null {
   return "gene";
 }
 
+function normalizeSeverity(value: unknown): number {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return DEFAULT_SEVERITY;
+  return Math.min(5, Math.max(1, Math.round(numeric)));
+}
+
+function normalizeTask(task: Partial<TodoTask>): TodoTask | null {
+  if (!task.id || !task.targetId || !task.targetType || !task.note || !task.createdAt) return null;
+  if (task.targetType !== "sample" && task.targetType !== "gene") return null;
+
+  return {
+    id: String(task.id),
+    targetId: String(task.targetId),
+    targetType: task.targetType,
+    note: String(task.note),
+    severity: normalizeSeverity(task.severity),
+    createdAt: String(task.createdAt),
+    completed: Boolean(task.completed),
+  };
+}
+
 function IdAction({
   token,
   targetType,
@@ -88,16 +112,18 @@ function IdAction({
 }: {
   token: string;
   targetType: TaskTargetType;
-  onAddTask: (task: PendingNote & { note: string }) => void;
+  onAddTask: (task: PendingNote & { note: string; severity: number }) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
+  const [severity, setSeverity] = useState(DEFAULT_SEVERITY);
   const trimmed = note.trim();
 
   function submit() {
     if (!trimmed) return;
-    onAddTask({ targetId: token, targetType, note: trimmed });
+    onAddTask({ targetId: token, targetType, note: trimmed, severity });
     setNote("");
+    setSeverity(DEFAULT_SEVERITY);
     setOpen(false);
   }
 
@@ -133,6 +159,16 @@ function IdAction({
             }}
             autoFocus
           />
+          <label className="gpt-note-severity">
+            <span>Severity</span>
+            <select value={severity} onChange={(event) => setSeverity(normalizeSeverity(event.target.value))}>
+              {SEVERITY_OPTIONS.map((value) => (
+                <option value={value} key={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
           <span className="gpt-note-actions">
             <button type="button" onClick={() => setOpen(false)}>
               Cancel
@@ -147,7 +183,7 @@ function IdAction({
   );
 }
 
-function renderIds(children: ReactNode, onAddTask?: (task: PendingNote & { note: string }) => void): ReactNode {
+function renderIds(children: ReactNode, onAddTask?: (task: PendingNote & { note: string; severity: number }) => void): ReactNode {
   if (!onAddTask) return children;
 
   return Children.map(children, (child) => {
@@ -199,7 +235,7 @@ function MarkdownMessage({
 }: {
   text: string;
   streaming?: boolean;
-  onAddTask?: (task: PendingNote & { note: string }) => void;
+  onAddTask?: (task: PendingNote & { note: string; severity: number }) => void;
 }) {
   const idRenderer = streaming ? undefined : onAddTask;
 
@@ -237,6 +273,10 @@ export default function ChatPage() {
   const [activeId, setActiveId] = useState<string>(initialConversation.current.id);
   const [tasks, setTasks] = useState<TodoTask[]>([]);
   const tasksHydrated = useRef(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editNote, setEditNote] = useState("");
+  const [editSeverity, setEditSeverity] = useState(DEFAULT_SEVERITY);
+  const [exportStatus, setExportStatus] = useState("");
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -258,7 +298,7 @@ export default function ChatPage() {
       const stored = window.localStorage.getItem(TODO_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) setTasks(parsed);
+        if (Array.isArray(parsed)) setTasks(parsed.map(normalizeTask).filter(Boolean) as TodoTask[]);
       }
     } catch {
       setTasks([]);
@@ -302,13 +342,14 @@ export default function ChatPage() {
     });
   }
 
-  function addTask(task: PendingNote & { note: string }) {
+  function addTask(task: PendingNote & { note: string; severity: number }) {
     setTasks((prev) => [
       {
         id: crypto.randomUUID(),
         targetId: task.targetId,
         targetType: task.targetType,
         note: task.note,
+        severity: normalizeSeverity(task.severity),
         createdAt: new Date().toISOString(),
         completed: false,
       },
@@ -324,6 +365,118 @@ export default function ChatPage() {
 
   function deleteTask(id: string) {
     setTasks((prev) => prev.filter((task) => task.id !== id));
+  }
+
+  function beginEditTask(task: TodoTask) {
+    setEditingTaskId(task.id);
+    setEditNote(task.note);
+    setEditSeverity(task.severity);
+  }
+
+  function cancelEditTask() {
+    setEditingTaskId(null);
+    setEditNote("");
+    setEditSeverity(DEFAULT_SEVERITY);
+  }
+
+  function saveEditTask(id: string) {
+    const trimmed = editNote.trim();
+    if (!trimmed) return;
+
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === id
+          ? {
+              ...task,
+              note: trimmed,
+              severity: normalizeSeverity(editSeverity),
+            }
+          : task,
+      ),
+    );
+    cancelEditTask();
+  }
+
+  function tasksAsMarkdown() {
+    const lines = ["# Clinical Chat To-do", ""];
+
+    if (tasks.length === 0) {
+      lines.push("_No tasks yet._");
+      return lines.join("\n");
+    }
+
+    tasks.forEach((task) => {
+      lines.push(
+        `- [${task.completed ? "x" : " "}] **${task.targetId}** (${task.targetType}, severity ${task.severity}/5): ${task.note}`,
+      );
+      lines.push(`  - Created: ${new Date(task.createdAt).toLocaleString()}`);
+    });
+
+    return lines.join("\n");
+  }
+
+  function downloadText(filename: string, content: string, type: string) {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportObsidian() {
+    downloadText("clinical-chat-todo.md", tasksAsMarkdown(), "text/markdown;charset=utf-8");
+    setExportStatus("Obsidian Markdown exported.");
+  }
+
+  async function exportNotion() {
+    const markdown = tasksAsMarkdown();
+    try {
+      await navigator.clipboard.writeText(markdown);
+      setExportStatus("Notion-ready Markdown copied.");
+    } catch {
+      downloadText("clinical-chat-todo-for-notion.md", markdown, "text/markdown;charset=utf-8");
+      setExportStatus("Clipboard unavailable; Markdown downloaded.");
+    }
+  }
+
+  function calendarTimestamp(date: Date) {
+    return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  }
+
+  function escapeIcsText(value: string) {
+    return value.replace(/\\/g, "\\\\").replace(/,/g, "\\,").replace(/;/g, "\\;").replace(/\n/g, "\\n");
+  }
+
+  function exportCalendar() {
+    const now = new Date();
+    const due = new Date(now.getTime() + 60 * 60 * 1000);
+    const lines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Clinical Chat//Todo Tasks//EN",
+      "CALSCALE:GREGORIAN",
+    ];
+
+    tasks.forEach((task) => {
+      lines.push(
+        "BEGIN:VTODO",
+        `UID:${task.id}@clinical-chat`,
+        `DTSTAMP:${calendarTimestamp(now)}`,
+        `DUE:${calendarTimestamp(due)}`,
+        `SUMMARY:${escapeIcsText(`${task.targetId} follow-up`)}`,
+        `DESCRIPTION:${escapeIcsText(`${task.note}\nType: ${task.targetType}\nSeverity: ${task.severity}/5`)}`,
+        `STATUS:${task.completed ? "COMPLETED" : "NEEDS-ACTION"}`,
+        "END:VTODO",
+      );
+    });
+
+    lines.push("END:VCALENDAR");
+    downloadText("clinical-chat-tasks.ics", lines.join("\r\n"), "text/calendar;charset=utf-8");
+    setExportStatus("Calendar task file exported.");
   }
 
   async function send(text?: string) {
@@ -535,6 +688,18 @@ export default function ChatPage() {
           <span>To-do</span>
           <b>{tasks.length}</b>
         </div>
+        <div className="gpt-export-actions" aria-label="Export tasks">
+          <button type="button" onClick={exportObsidian} disabled={tasks.length === 0}>
+            Obsidian
+          </button>
+          <button type="button" onClick={exportNotion} disabled={tasks.length === 0}>
+            Notion
+          </button>
+          <button type="button" onClick={exportCalendar} disabled={tasks.length === 0}>
+            Calendar
+          </button>
+        </div>
+        {exportStatus ? <p className="gpt-export-status">{exportStatus}</p> : null}
         {tasks.length === 0 ? (
           <p className="gpt-todo-empty">Add notes from sample or gene IDs in assistant answers.</p>
         ) : (
@@ -557,9 +722,61 @@ export default function ChatPage() {
                   <div className="gpt-todo-meta">
                     <span className={task.targetType}>{task.targetId}</span>
                     <small>{task.targetType}</small>
+                    <strong className={`gpt-severity severity-${task.severity}`}>S{task.severity}</strong>
                   </div>
-                  <p>{task.note}</p>
+                  {editingTaskId === task.id ? (
+                    <div className="gpt-todo-edit">
+                      <textarea
+                        value={editNote}
+                        rows={3}
+                        onChange={(event) => setEditNote(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" && !event.shiftKey) {
+                            event.preventDefault();
+                            saveEditTask(task.id);
+                          }
+                          if (event.key === "Escape") {
+                            cancelEditTask();
+                          }
+                        }}
+                        autoFocus
+                      />
+                      <label>
+                        <span>Severity</span>
+                        <select value={editSeverity} onChange={(event) => setEditSeverity(normalizeSeverity(event.target.value))}>
+                          {SEVERITY_OPTIONS.map((value) => (
+                            <option value={value} key={value}>
+                              {value}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <div className="gpt-todo-edit-actions">
+                        <button type="button" onClick={cancelEditTask}>
+                          Cancel
+                        </button>
+                        <button type="button" className="primary" disabled={!editNote.trim()} onClick={() => saveEditTask(task.id)}>
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p>{task.note}</p>
+                  )}
                 </div>
+                {editingTaskId === task.id ? null : (
+                  <button
+                    className="gpt-todo-edit-button"
+                    type="button"
+                    aria-label={`Edit task for ${task.targetId}`}
+                    title={`Edit task for ${task.targetId}`}
+                    onClick={() => beginEditTask(task)}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                      <path d="M2 9.7V11h1.3l6.2-6.2-1.3-1.3L2 9.7zM9 2.7l1.3-1.3 1.3 1.3-1.3 1.3L9 2.7z" fill="currentColor" />
+                    </svg>
+                  </button>
+                )}
                 <button
                   className="gpt-todo-delete"
                   type="button"

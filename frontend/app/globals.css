@@ -961,6 +961,40 @@ a {
   line-height: 1.45;
 }
 
+.gpt-export-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.gpt-export-actions button {
+  min-width: 0;
+  padding: 7px 6px;
+  border-radius: 7px;
+  border: 1px solid #cfd6e8;
+  background: #f8faff;
+  color: #38435f;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.gpt-export-actions button:hover:not(:disabled) {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.gpt-export-actions button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.gpt-export-status {
+  margin: -2px 0 2px;
+  color: #66708a;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .gpt-todo-list {
   display: flex;
   flex-direction: column;
@@ -971,7 +1005,7 @@ a {
 
 .gpt-todo-item {
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) 22px;
+  grid-template-columns: 20px minmax(0, 1fr) 22px 22px;
   gap: 9px;
   align-items: flex-start;
   padding: 10px;
@@ -1037,6 +1071,41 @@ a {
   text-transform: uppercase;
 }
 
+.gpt-severity {
+  flex-shrink: 0;
+  min-width: 26px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.gpt-severity.severity-1 {
+  background: #eef8ef;
+  color: #25713d;
+}
+
+.gpt-severity.severity-2 {
+  background: #f0f7df;
+  color: #64751d;
+}
+
+.gpt-severity.severity-3 {
+  background: #fff5d7;
+  color: #8a6200;
+}
+
+.gpt-severity.severity-4 {
+  background: #ffe9dc;
+  color: #a64611;
+}
+
+.gpt-severity.severity-5 {
+  background: #ffe1e7;
+  color: #b4234b;
+}
+
 .gpt-todo-body p {
   margin: 4px 0 0;
   color: #566078;
@@ -1058,9 +1127,99 @@ a {
   color: #858fa5;
 }
 
+.gpt-todo-edit-button {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  color: #858fa5;
+}
+
+.gpt-todo-edit-button:hover {
+  background: #eef1f8;
+  color: #2d3550;
+}
+
 .gpt-todo-delete:hover {
   background: #eef1f8;
   color: #2d3550;
+}
+
+.gpt-todo-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 7px;
+}
+
+.gpt-todo-edit textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 70px;
+  border: 1px solid #cfd6e8;
+  border-radius: 7px;
+  padding: 8px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.gpt-todo-edit textarea:focus {
+  outline: 2px solid rgba(63,96,219,0.16);
+  border-color: var(--blue);
+}
+
+.gpt-todo-edit label,
+.gpt-note-severity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #66708a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.gpt-todo-edit select,
+.gpt-note-severity select {
+  height: 30px;
+  min-width: 58px;
+  border: 1px solid #cfd6e8;
+  border-radius: 6px;
+  background: #fff;
+  color: #2d3550;
+  font: inherit;
+  font-size: 13px;
+}
+
+.gpt-todo-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.gpt-todo-edit-actions button {
+  padding: 6px 9px;
+  border-radius: 6px;
+  color: #4a5268;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.gpt-todo-edit-actions button:hover {
+  background: #eef1f8;
+}
+
+.gpt-todo-edit-actions button.primary {
+  background: var(--blue);
+  color: #fff;
+}
+
+.gpt-todo-edit-actions button.primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 @media (max-width: 1180px) {
