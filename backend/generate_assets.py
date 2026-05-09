@@ -29,8 +29,6 @@ def generate_assets(pdf_path: str = "report.pdf", audience: str = "lab") -> dict
     report = parse_pdf(pdf_path)
     summary = summarize(report, audience=audience)
     script = generate_script(summary, audience=audience)
-    line_paths = generate_audio(script, output_dir=str(output_dir))
-    assemble(line_paths, audio_path)
 
     summary_payload = {
         "audience": audience,
@@ -43,6 +41,11 @@ def generate_assets(pdf_path: str = "report.pdf", audience: str = "lab") -> dict
 
     summary_path.write_text(json.dumps(summary_payload, indent=2), encoding="utf-8")
     script_path.write_text(json.dumps(script, indent=2), encoding="utf-8")
+
+    if not audio_path.exists():
+        line_paths = generate_audio(script, output_dir=str(output_dir))
+        assemble(line_paths, audio_path)
+
     return summary_payload
 
 
