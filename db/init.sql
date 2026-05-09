@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS documents (
     id        SERIAL PRIMARY KEY,
     source    TEXT,
     content   TEXT NOT NULL,
-    embedding vector(384)
+    embedding vector(2048)
 );
 
 CREATE INDEX IF NOT EXISTS documents_embedding_idx

@@ -1,27 +1,28 @@
 """
 RAG ingestion pipeline: chunks txt files and stores embeddings in pgvector.
 
+Embedding priority:
+  1. Google Gemini text-embedding-004 (768-dim) — requires GEMINI_API_KEY in .env
+  2. HuggingFace all-mpnet-base-v2 (768-dim)    — free local fallback
+
 Usage:
-    uv run ingest.py path/to/file.txt [path/to/other.txt ...]
-    uv run ingest.py example/          # ingest all .txt in a folder
+    uv run python txt-ingest.py path/to/file.txt [path/to/other.txt ...]
+    uv run python txt-ingest.py example/          # ingest all .txt in a folder
 """
 
 import os
 import sys
-import glob
-import hashlib
-import textwrap
 import psycopg2
 from pathlib import Path
 from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
 
 load_dotenv(Path(__file__).parents[2] / ".env")
 
-# ── Config ──────────────────────────────────────────────────────────────────
-CHUNK_SIZE = 500        # characters per chunk
-CHUNK_OVERLAP = 50      # character overlap between consecutive chunks
-MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"  # 384-dim, free, fast
+# ── Config ───────────────────────────────────────────────────────────────────
+CHUNK_SIZE = 500
+CHUNK_OVERLAP = 50
+HF_MODEL_NAME = "sentence-transformers/all-mpnet-base-v2"  # 768-dim fallback
+EMBEDDING_DIM = 768
 
 DB_CONFIG = {
     "host": os.getenv("POSTGRES_HOST", "localhost"),
@@ -32,20 +33,54 @@ DB_CONFIG = {
 }
 
 
-# ── Chunking ─────────────────────────────────────────────────────────────────
+# ── Embedding backends ────────────────────────────────────────────────────────
+def _gemini_embed(chunks: list[str]) -> list[list[float]]:
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    result = client.models.embed_content(
+        model="text-embedding-004",
+        contents=chunks,
+        config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
+    )
+    return [e.values for e in result.embeddings]
+
+
+def _hf_embed(chunks: list[str], model) -> list[list[float]]:
+    return model.encode(chunks, show_progress_bar=False, batch_size=64).tolist()
+
+
+def load_embedder():
+    """Return (embed_fn, label). Tries Gemini first, falls back to HuggingFace."""
+    gemini_key = os.getenv("GEMINI_API_KEY", "")
+    if gemini_key:
+        try:
+            # Smoke-test with a single string to catch auth/quota errors early
+            _gemini_embed(["test"])
+            print("Embedder: Gemini text-embedding-004")
+            return (lambda chunks: _gemini_embed(chunks), "gemini")
+        except Exception as e:
+            print(f"Gemini unavailable ({e}), falling back to HuggingFace …")
+
+    print(f"Embedder: HuggingFace {HF_MODEL_NAME}")
+    from sentence_transformers import SentenceTransformer
+    model = SentenceTransformer(HF_MODEL_NAME)
+    return (lambda chunks: _hf_embed(chunks, model), "huggingface")
+
+
+# ── Chunking ──────────────────────────────────────────────────────────────────
 def chunk_text(text: str, size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) -> list[str]:
-    """Split text into overlapping fixed-size character chunks."""
     chunks = []
     start = 0
     while start < len(text):
-        end = start + size
-        chunks.append(text[start:end].strip())
+        chunks.append(text[start:start + size].strip())
         start += size - overlap
     return [c for c in chunks if c]
 
 
-# ── DB helpers ───────────────────────────────────────────────────────────────
-def connect() -> psycopg2.extensions.connection:
+# ── DB helpers ────────────────────────────────────────────────────────────────
+def connect():
     return psycopg2.connect(**DB_CONFIG)
 
 
@@ -54,19 +89,17 @@ def source_already_ingested(cur, source: str) -> bool:
     return cur.fetchone() is not None
 
 
-def insert_chunks(cur, source: str, chunks: list[str], embeddings) -> int:
-    inserted = 0
+def insert_chunks(cur, source: str, chunks: list[str], embeddings: list[list[float]]) -> int:
     for chunk, emb in zip(chunks, embeddings):
         cur.execute(
             "INSERT INTO documents (source, content, embedding) VALUES (%s, %s, %s)",
-            (source, chunk, emb.tolist()),
+            (source, chunk, emb),
         )
-        inserted += 1
-    return inserted
+    return len(chunks)
 
 
-# ── Ingestion ────────────────────────────────────────────────────────────────
-def ingest_file(path: Path, model: SentenceTransformer, conn) -> int:
+# ── Ingestion ─────────────────────────────────────────────────────────────────
+def ingest_file(path: Path, embed_fn, conn) -> int:
     source = str(path.resolve())
     text = path.read_text(encoding="utf-8", errors="replace")
     chunks = chunk_text(text)
@@ -77,8 +110,8 @@ def ingest_file(path: Path, model: SentenceTransformer, conn) -> int:
             return 0
 
         print(f"  embedding {len(chunks)} chunks from {path.name} …", end="", flush=True)
-        embeddings = model.encode(chunks, show_progress_bar=False, batch_size=64)
-        print(f" done")
+        embeddings = embed_fn(chunks)
+        print(" done")
 
         n = insert_chunks(cur, source, chunks, embeddings)
     conn.commit()
@@ -108,15 +141,14 @@ def main():
         print("No .txt files found.")
         sys.exit(1)
 
-    print(f"Loading model {MODEL_NAME} …")
-    model = SentenceTransformer(MODEL_NAME)
+    embed_fn, _ = load_embedder()
 
     print(f"Connecting to postgres at {DB_CONFIG['host']}:{DB_CONFIG['port']} …")
     conn = connect()
 
     total = 0
     for path in paths:
-        n = ingest_file(path, model, conn)
+        n = ingest_file(path, embed_fn, conn)
         total += n
         if n:
             print(f"  inserted {n} chunks from {path.name}")
