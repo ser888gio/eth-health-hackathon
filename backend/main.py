@@ -27,14 +27,14 @@ def main(pdf_path: str = "report.pdf", audience: str = "lab") -> None:
     print(f"[2/5] Summarizing for audience='{audience}'...")
     summary = summarize(report, audience=audience)
 
-    print("[3/5] Generating podcast script...")
+    print("[3/5] Generating audio briefing script...")
     script = generate_script(summary, audience=audience)
-    print(f"      Script has {len(script)} turns")
+    print(f"      Script has {len(script)} segments")
 
-    print(f"[4/5] Generating audio ({len(script)} lines)...")
+    print(f"[4/5] Generating audio ({len(script)} segments)...")
     line_paths = generate_audio(script)
 
-    out_path = Path(f"output/podcast_{audience}.mp3")
+    out_path = Path(f"output/briefing_{audience}.mp3")
     print(f"[5/5] Assembling → {out_path}")
     assemble(line_paths, out_path)
 

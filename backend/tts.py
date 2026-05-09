@@ -14,10 +14,8 @@ def _client() -> ElevenLabs:
     return ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
 
 
-def _voice_id(speaker: str) -> str:
-    if speaker.lower() == "asher":
-        return os.getenv("ELEVENLABS_VOICE_ASHER", "")
-    return os.getenv("ELEVENLABS_VOICE_JAMES", "")
+def _voice_id() -> str:
+    return os.getenv("ELEVENLABS_VOICE_NARRATOR", "")
 
 
 def generate_audio(script: list[dict], output_dir: str = "output") -> list[Path]:
@@ -25,17 +23,15 @@ def generate_audio(script: list[dict], output_dir: str = "output") -> list[Path]
     out.mkdir(exist_ok=True)
 
     client = _client()
+    voice = _voice_id()
+    if not voice:
+        raise ValueError(
+            "No voice ID configured. Set ELEVENLABS_VOICE_NARRATOR in .env"
+        )
     paths: list[Path] = []
 
     for i, turn in enumerate(script):
-        speaker = turn["speaker"]
         line = turn["line"]
-        voice = _voice_id(speaker)
-        if not voice:
-            raise ValueError(
-                f"No voice ID configured for speaker '{speaker}'. "
-                f"Set ELEVENLABS_VOICE_{speaker.upper()} in .env"
-            )
 
         file_path = out / f"line_{i:03d}.mp3"
         audio_chunks = client.text_to_speech.convert(
@@ -45,7 +41,7 @@ def generate_audio(script: list[dict], output_dir: str = "output") -> list[Path]
             output_format=OUTPUT_FORMAT,
         )
         file_path.write_bytes(b"".join(audio_chunks))
-        print(f"  [{i+1}/{len(script)}] {speaker}: {line[:60]}...")
+        print(f"  [{i+1}/{len(script)}] {line[:60]}...")
         paths.append(file_path)
 
     return paths

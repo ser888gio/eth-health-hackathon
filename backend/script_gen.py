@@ -12,41 +12,38 @@ MODEL = "gemini-3-flash-preview"
 SCRIPT_SYSTEM = {
     "lab": (
         "Write for an audience of lab scientists and bioinformaticians. "
-        "Use precise technical language freely. James leads the technical discussion; "
-        "Asher asks sharp, clinically-oriented follow-up questions."
+        "Use precise technical language freely. Speak as a single expert narrator."
     ),
     "clinical": (
         "Write for clinicians (oncologists, rare disease specialists). "
-        "Explain genomics terms briefly on first use. Asher leads, framing everything "
-        "as patient impact and diagnostic confidence."
+        "Explain genomics terms briefly on first use. Frame everything "
+        "as patient impact and diagnostic confidence. Speak as a single narrator."
     ),
     "general": (
         "Write for the general public — curious non-scientists. "
         "Use everyday analogies. Never use an acronym without immediately explaining it. "
-        "Both hosts speak as if explaining to a smart friend."
+        "Speak as a single narrator, as if explaining to a smart friend."
     ),
 }
 
 SCRIPT_USER_TEMPLATE = """\
-Write a conversational podcast script (~600 words, ~90 seconds spoken) between two hosts:
-- Asher (clinician): patient/clinical impact angle
-- James (bioinformatician): technical explanation angle
+Write a spoken audio briefing (~600 words, ~90 seconds spoken) delivered by a single narrator.
 
 Use this quality report summary:
 {summary_json}
 
-Script structure (stick to this order):
-1. Hook (10s): Asher opens with "Something interesting came out of this week's sequencing run..."
-2. Headline (20s): James explains the MSH2 panel design finding and Lynch syndrome implications
-3. Deep dive (30s): Asher asks about the outlier sample; James explains what went wrong technically
-4. So what? (20s): Asher asks what the lab should do; James gives 1-2 concrete next steps
-5. Close (10s): natural wrap-up, "see you next run"
+Structure (stick to this order):
+1. Hook (10s): open with "Something interesting came out of this week's sequencing run..."
+2. Headline (20s): explain the MSH2 panel design finding and Lynch syndrome implications
+3. Deep dive (30s): describe the outlier sample and what went wrong technically
+4. So what? (20s): state what the lab should do — give 1-2 concrete next steps
+5. Close (10s): natural wrap-up
 
 Rules:
 - Output ONLY valid JSON, no prose before or after
-- Format: [{{"speaker": "Asher", "line": "..."}}, {{"speaker": "James", "line": "..."}}, ...]
+- Format: [{{"speaker": "Narrator", "line": "..."}}, ...]
 - No stage directions, no [brackets], no (parenthetical notes)
-- Each line is one spoken turn — keep turns under 40 words
+- Each line is one spoken segment — keep segments under 40 words
 - Do not repeat the same information twice"""
 
 
@@ -96,7 +93,7 @@ def generate_script(summary: dict, audience: str = "lab", max_retries: int = 3) 
         try:
             raw = _strip_fences(text)
             parsed = json.loads(raw)
-            if isinstance(parsed, list) and parsed and isinstance(parsed[0], dict):
+            if isinstance(parsed, list) and parsed and isinstance(parsed[0], dict) and "line" in parsed[0]:
                 return parsed
             last_error = ValueError(
                 f"Model returned unexpected JSON structure (attempt {attempt+1}): {raw[:300]}"
