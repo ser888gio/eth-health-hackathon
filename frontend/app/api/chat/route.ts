@@ -21,7 +21,7 @@ function getAI() {
 async function embedQuery(query: string): Promise<number[]> {
   const ai = getAI();
   const result = await ai.models.embedContent({
-    model: "text-embedding-004",
+    model: "gemini-embedding-2",
     contents: query,
     config: { taskType: "RETRIEVAL_QUERY" },
   });
