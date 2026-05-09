@@ -1,0 +1,619 @@
+                                        SOPHiA
+                                        DDM™                                                    Read                               Coding     gnomAD AF gnomAD
+gene     transcript    transcript_label predictionc.DNA               protein_hgvs        VAF(%)depthexon_rankposition_in_exonType consequencegenomes   AF exomes acmg            clinvar_review_status
+
+                                                                      NP_009225.1:p.
+BRCA1    NM_007294.4   MANE Select A            c.1175_1214del        (Leu392Glnfs*5)       35.2 440       10           505INDELframeshift    1.3138E-5 6.84061E-6Likely_pathogenicreviewed_by_expert_pane
+
+
+MSH3     NM_002439.5   MANE Select C            c.*4G>A               NP_002430.3:p.(=)     29.4 486       24           116SNV 3'UTR                              VUS
+                                                                                                                                                                                  criteria_provided;
+                                                                                                                                                                                  multiple_submitters;
+SDHC     NM_003001.5   MANE Select D            c.*123C>G             NP_002992.1:p.(=)     44.3 675        6           228SNV 3'UTR          0.0845197 0.0748622Benign           no_conflicts
+                                                                                                                                                                                  criteria_provided;
+                                                                                                                                                                                  multiple_submitters;
+SDHC     NM_003001.5   MANE Select D            c.20+11_20+12dup      NP_002992.1:p.(=)     41.2 549        1             0INDELintronic       0.118011 0.0784489Benign           no_conflicts
+                                                                                                                                                                                  criteria_provided;
+                                                                      NP_001041639.1:p.                                                                                           multiple_submitters;
+MUTYH    NM_001048174.2MANE Select D            c.930G>C              (Gln310His)           47.4 563       12            17SNV missense        0.269611   0.260121Benign          no_conflicts
+
+                                                                                                                                                                                  criteria_provided;
+SDHC     NM_003001.5   MANE Select D            c.77+26_77+27insAT    NP_002992.1:p.(=)     29.2 329        2             0INDELintronic       0.115538           Benign          single_submitter
+                                                                                                                                                                                  criteria_provided;
+                                                                      NP_002991.2:p.                                                                                              multiple_submitters;
+SDHB     NM_003000.3   MANE Select D            c.18C>A               (Ala6=)                100 603        1            31SNV synonymous      0.955972   0.973791Benign          no_conflicts
+
+
+         .                            D                                                     99.8 578                        SNV intergenic     0.614245   0.661841Benign
+
+
+         .                            D                                                     45.2 640                        SNV intergenic     0.614103   0.618063Benign
+
+                                                                      NP_000170.1:p.
+MSH6     NM_000179.3   MANE Select D            c.186C>A              (Arg62=)              35.8 397        1            -75SNV synonymous     0.125978   0.169972Benign          reviewed_by_expert_pane
+                                                                                                                                                                                  criteria_provided;
+                                                                      NP_000456.2:p.                                                                                              multiple_submitters;
+BARD1    NM_000465.4   MANE Select D            c.1518_1519delinsCA   (Val507Met)           99.6 521        6            -50SNV missense                          VUS             no_conflicts
+
+
+MSH6     NM_000179.3   MANE Select D            c.3802-40C>G          NP_000170.1:p.(=)     50.8 514        9             0SNV intronic         0.77248   0.737937Benign          reviewed_by_expert_pane
+
+                                                                      NP_000170.1:p.
+MSH6     NM_000179.3   MANE Select D            c.276A>G              (Pro92=)              48.3 563        2            16SNV synonymous      0.143302   0.170423Benign          reviewed_by_expert_pane
+
+
+         .                            D                                                     99.7 325                        SNV intergenic                        VUS
+                                                                                                                                                                                  criteria_provided;
+                                                                                                                                                                                  multiple_submitters;
+BARD1    NM_000465.4   MANE Select D            c.1568+14C>T          NP_000456.2:p.(=)     99.8 519        6             0SNV intronic        0.350788   0.344281Benign          no_conflicts
+
+
+MSH6     NM_000179.3   MANE Select D            c.3439-16C>T          NP_000170.1:p.(=)     50.8 506        6             0SNV intronic      0.002225960.00403068Likely_benign    reviewed_by_expert_pane
+
+
+MSH6     NM_000179.3   MANE Select D            c.3438+14A>T          NP_000170.1:p.(=)     41.9 480        5             0SNV intronic        0.334013   0.393714Benign          reviewed_by_expert_pane
+
+                                                                      NP_000170.1:p.
+MSH6     NM_000179.3   MANE Select D            c.540T>C              (Asp180=)             47.4 553        3            83SNV synonymous      0.231285   0.267932Benign          reviewed_by_expert_pane
+
+
+MSH6     NM_000179.3   MANE Select D            c.260+22C>G           NP_000170.1:p.(=)     42.7 227        1             0SNV intronic        0.129473    0.17464Benign          reviewed_by_expert_pane
+                                                                                                                                                                                  criteria_provided;
+                                                                                                                                                                                  multiple_submitters;
+BARD1    NM_000465.4   MANE Select D            c.1315-19G>A          NP_000456.2:p.(=)      100 531        5             0SNV intronic        0.371547   0.368224Benign          no_conflicts
+
+                                                                      NP_002345.2:p.                                                                                              conflicting_classifications;
+EPCAM    NM_002354.3   MANE Select D            c.267G>C              (Gln89His)            52.2 590        3            83SNV missense      0.002844270.00451746Benign           criteria_provided
+                                                                                                                                                                                  criteria_provided;
+                                                                      NP_060319.1:p.                                                                                              multiple_submitters;
+TMEM127 NM_017849.4    MANE Select D            c.621G>A              (Ala207=)             46.8 703        4           212SNV synonymous      0.142309   0.174233Benign          no_conflicts
+                                                                                                                                                                                  criteria_provided;
+                                                                      NP_000456.2:p.                                                                                              multiple_submitters;
+BARD1    NM_000465.4   MANE Select D            c.1134G>C             (Arg378Ser)           99.8 487        4           -181SNV missense       0.529993   0.586152Benign          no_conflicts
+
+                                                                      NP_001245203.1:p.
+MLH1     NM_001258274.3REFSEQ         D         c.-537C>T             (=)                    100 546        3            -21SNV 5'UTR          0.406447   0.382242Benign          reviewed_by_expert_pane
+                                                                                                                                                                                  criteria_provided;
+                                                                                                                                                                                  multiple_submitters;
+TGFBR2 NM_003242.6     MANE Select D            c.455-4T>A            NP_003233.4:p.(=)     50.5 560        4             0SNV intronic          0.2636   0.308485Benign          no_conflicts
+
+                                                                                                                                                                                  criteria_provided;
+                                                                                                                                                                                  multiple_submitters;
+TGFBR2 NM_003242.6     MANE Select D            c.263+7A>G            NP_003233.4:p.(=)     51.9 601        2             0SNV intronic        0.347278   0.343511Benign          no_conflicts
+
+
+MLH1     NM_000249.4   MANE Select D            c.1668-19A>G          NP_000240.1:p.(=)     99.8 472       15             0SNV intronic        0.408678   0.414053Benign          reviewed_by_expert_pane
+                                                                                                                                                                                  criteria_provided;
+                                                                                                                                                                                  multiple_submitters;
+PIK3CA   NM_006218.4   MANE Select D            c.1060-17C>A          NP_006209.2:p.(=)     44.3 470        6             0SNV intronic        0.636961   0.571832Benign          no_conflicts
+
+
+         .                            D                                                     99.2 491                        SNV intergenic     0.614107   0.568992Benign
+
+                                                                      NP_000240.1:p.
+MLH1     NM_000249.4   MANE Select D            c.655A>G              (Ile219Val)           53.3 542        8            -23SNV missense       0.226462   0.290039Benign          reviewed_by_expert_pane
+                                                                                                                                                                                  criteria_provided;
+                                                                      NP_006197.1:p.                                                                                              multiple_submitters;
+PDGFRA NM_006206.6     MANE Select D            c.612T>C              (Asn204=)               45 489        4            -17SNV synonymous     0.180616   0.144081Benign          no_conflicts
+
+
+         .                            D                                                      100 479                        SNV intergenic     0.411909   0.398707Benign
+                                                                                                                                                                                  criteria_provided;
+                                                                      NP_006197.1:p.                                                                                              multiple_submitters;
+PDGFRA NM_006206.6     MANE Select D            c.3222T>C             (Asp1074=)             100 530       23           100SNV synonymous      0.997387   0.999719Benign          no_conflicts
+                                                                                                                                                                                  criteria_provided;
+                                                                      NP_006197.1:p.                                                                                              multiple_submitters;
+PDGFRA NM_006206.6     MANE Select D            c.1809G>A             (Ala603=)             46.5 579       13            23SNV synonymous       0.17476   0.120989Benign          no_conflicts
+                                                                                                                                                                                  criteria_provided;
+                                                                      NP_006197.1:p.                                                                                              multiple_submitters;
+PDGFRA NM_006206.6     MANE Select D            c.2472C>T             (Val824=)             45.9 662       18            33SNV synonymous      0.201442   0.155972Benign          no_conflicts
+                                                                                                                                                                                  criteria_provided;
+                                                                      NP_001334756.1:p.                                                                                           multiple_submitters;
+PDGFRA NM_001347827.2REFSEQ           D         c.2345C>T             (Thr782Met)           47.4 500       17            22SNV missense       0.0838797 0.0862223Benign           no_conflicts
+                                                                                                                                                                                  criteria_provided;
+                                                                      NP_006197.1:p.                                                                                              multiple_submitters;
+PDGFRA NM_006206.6     MANE Select D            c.1701A>G             (Pro567=)              100 575       12            48SNV synonymous      0.966842   0.995186Benign          no_conflicts
+                                                                                                                                                                                  criteria_provided;
+                                                                      NP_006197.1:p.                                                                                              multiple_submitters;
+PDGFRA NM_006206.6     MANE Select D            c.1432T>C             (Ser478Pro)           44.5 584       10            68SNV missense        0.154269   0.121777Benign          no_conflicts
+                                                                                                                                                                                  criteria_provided;
+                                                                      NP_006197.1:p.                                                                                              multiple_submitters;
+PDGFRA NM_006206.6     MANE Select D            c.939T>G              (Gly313=)               51 537        7             8SNV synonymous       0.17895   0.143238Benign          no_conflicts
+                                                                                                                                                                                  criteria_provided;
+                                                                      NP_000029.2:p.                                                                                              multiple_submitters;
+APC      NM_000038.6   MANE Select D            c.5268T>G             (Ser1756=)            48.9 538       16          3310SNV synonymous      0.602803   0.629121Benign          no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                                                                                                                     multiple_submitters;
+APC      NM_000038.6   MANE Select D   c.1408+743G>A         NP_000029.2:p.(=)   100 595    11      0SNV intronic        0.617767           Benign   no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                             NP_000029.2:p.                                                                          multiple_submitters;
+APC      NM_000038.6   MANE Select D   c.4479G>A             (Thr1493=)          48.5 581   16   2521SNV synonymous      0.601555    0.62748Benign   no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                             NP_004159.2:p.                                                                          multiple_submitters;
+SDHA     NM_004168.4   MANE Select D   c.113A>T              (Asp38Val)          49.7 525    2    -38SNV missense        0.029482 0.0438345Benign    no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                             NP_001120983.2:p.                                                                       multiple_submitters;
+APC      NM_001127511.3REFSEQ     D    c.-133C>G             (=)                 49.2 587    1     88SNV 5'UTR           0.157771   0.133805Benign   no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                             NP_004159.2:p.                                                                          multiple_submitters;
+SDHA     NM_004168.4   MANE Select D   c.891T>C              (Pro297=)           49.7 539    7      -5SNV synonymous     0.740525   0.741983Benign   no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                             NP_002430.3:p.                                                                          multiple_submitters;
+MSH3     NM_002439.5   MANE Select D   c.3133G>A             (Ala1045Thr)        45.1 519   23      3SNV missense        0.705945   0.718588Benign   no_conflicts
+
+                                                             NP_000029.2:p.
+APC      NM_000038.6   MANE Select D   c.1635G>A             (Ala545=)           48.9 665   14      9SNV synonymous      0.601356   0.627537Benign   reviewed_by_expert_pane
+
+                                                             NP_000029.2:p.
+APC      NM_000038.6   MANE Select D   c.1458T>C             (Tyr486=)           99.8 580   12     50SNV synonymous      0.481939   0.586759Benign   reviewed_by_expert_pane
+
+                                                             NP_000029.2:p.
+APC      NM_000038.6   MANE Select D   c.5465T>A             (Val1822Asp)        100 508    16   3507SNV missense        0.820117   0.776691Benign   reviewed_by_expert_pane
+
+                                                             NP_001366539.1:p.
+SPINK1   NM_001379610.1MANE Select D                         (=)                 46.6 453    1      0SNV intergenic       0.58786           Benign
+
+                                                                                                                                                     criteria_provided;
+APC      NM_000038.6   MANE Select D   c.*1753G>A            NP_000029.2:p.(=)   100 455    16   -361SNV 3'UTR           0.630646   0.659663Benign   single_submitter
+
+
+                                                                                                                                                     criteria_provided;
+APC      NM_000038.6   MANE Select D   c.*414dup             NP_000029.2:p.(=)   90.7 506   16   -1700INDEL3'UTR         0.611311   0.589077Benign   single_submitter
+                                                                                                                                                     criteria_provided;
+                                                             NP_001120983.2:p.                                                                       multiple_submitters;
+APC      NM_001127511.3REFSEQ     D    c.-31T>G              (=)                 48.4 546    1    190SNV 5'UTR          0.0910961    0.10323Benign   no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                             NP_937983.2:p.                                                                          multiple_submitters;
+TERT     NM_198253.3   MANE Select D   c.915G>A              (Ala305=)           43.7 490    2   -659SNV synonymous      0.222698   0.280804Benign   no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                             NP_000029.2:p.                                                                          multiple_submitters;
+APC      NM_000038.6   MANE Select D   c.5034G>A             (Gly1678=)          51.5 505   16   3076SNV synonymous       0.60469   0.632156Benign   no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                                                                                                                     multiple_submitters;
+SDHA     NM_004168.4   MANE Select D   c.456+20G>C           NP_004159.2:p.(=)   47.2 599    4      0SNV intronic       0.00430780.00684596Benign    no_conflicts
+
+                                                                                                                                                     criteria_provided;
+APC      NM_000038.6   MANE Select D   c.*1556C>G            NP_000029.2:p.(=)    47 457    16   -558SNV 3'UTR           0.406415   0.513951Benign   single_submitter
+                                                                                                                                                     criteria_provided;
+                                                             NP_000029.2:p.                                                                          multiple_submitters;
+APC      NM_000038.6   MANE Select D   c.5880G>A             (Pro1960=)          51.6 585   16   3922SNV synonymous      0.602759   0.627579Benign   no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                             NP_002430.3:p.                                                                          multiple_submitters;
+MSH3     NM_002439.5   MANE Select D   c.693G>A              (Pro231=)           48.7 470    4   -100SNV synonymous      0.124301 0.0805251Benign    no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                                                                                                                     multiple_submitters;
+SDHA     NM_004168.4   MANE Select D   c.771-11A>G           NP_004159.2:p.(=)   52.6 525    7      0SNV intronic        0.900597   0.883248Benign   no_conflicts
+
+                                                             NP_004159.2:p.                                                                          conflicting_classifications;
+SDHA     NM_004168.4   MANE Select D   c.969C>T              (Gly323=)           51.7 623    8     74SNV synonymous 0.004532790.00706574Benign       criteria_provided
+                                                                                                                                                     criteria_provided;
+                                                             NP_002430.3:p.                                                                          multiple_submitters;
+MSH3     NM_002439.5   MANE Select D   c.181_189dup          (Ala61_Pro63dup)    45.8 428    1    -49INDELinframe          0.1054 0.0657071Benign    no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                             NP_002430.3:p.                                                                          multiple_submitters;
+MSH3     NM_002439.5   MANE Select D   c.235A>G              (Ile79Val)          47.9 361    1      -3SNV missense       0.793965   0.768593Benign   no_conflicts
+
+
+         .                        D                                              99.6 526            SNV intergenic       0.50054    0.48385Benign
+                                                                                                                                                     criteria_provided;
+                                                             NP_000029.2:p.                                                                          multiple_submitters;
+APC      NM_000038.6   MANE Select D   c.7201C>T             (Leu2401=)          44.3 524   16   -3445SNV synonymous    0.0111399 0.0127983Benign    no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                             NP_002430.3:p.                                                                          multiple_submitters;
+MSH3     NM_002439.5   MANE Select D   c.2846A>G             (Gln949Arg)         100 399    21     33SNV missense        0.867196   0.853305Benign   no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                             NP_002430.3:p.                                                                          multiple_submitters;
+MSH3     NM_002439.5   MANE Select D   c.178_186del          (Ala60_Ala62del)    49.9 407    1    -52INDELinframe       0.0147004 0.0152896Benign    no_conflicts
+
+                                                                                                                                                     criteria_provided;
+APC      NM_000038.6   MANE Select D   c.*1098T>C            NP_000029.2:p.(=)   48.9 610   16   -1016SNV 3'UTR          0.401908   0.512704Benign   single_submitter
+
+
+         .                        D                                              48.8 451            SNV intergenic      0.504119   0.519332Benign
+                                                                                                                                                     criteria_provided;
+                                                                                                                                                     multiple_submitters;
+MDH2     NM_005918.4   MANE Select D   c.633+17C>T           NP_005909.2:p.(=)    56 641     6      0SNV intronic        0.453365   0.339459Benign   no_conflicts
+
+                                                             NP_000526.2:p.
+PMS2     NM_000535.7   MANE Select D   c.59G>A               (Arg20Gln)          44.5 512    2     36SNV missense       0.0743559 0.0684499Benign    reviewed_by_expert_pane
+                                                                                                                                                     criteria_provided;
+                                                             NP_000236.2:p.                                                                          multiple_submitters;
+MET      NM_000245.4   MANE Select D   c.4017G>A             (Ala1339=)          99.8 535   21     82SNV synonymous       0.34996   0.444388Benign   no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                             NP_000236.2:p.                                                                          multiple_submitters;
+MET      NM_000245.4   MANE Select D   c.3858C>T             (Asp1286=)          100 489    20     60SNV synonymous      0.347974   0.441075Benign   no_conflicts
+
+                                                             NP_000526.2:p.
+PMS2     NM_000535.7   MANE Select D   c.780C>G              (Ser260=)           100 465     7    -24SNV synonymous      0.816833   0.813122Benign   reviewed_by_expert_pane
+                                                                                                                                                     criteria_provided;
+                                                             NP_005909.2:p.                                                                          multiple_submitters;
+MDH2     NM_005918.4   MANE Select D   c.26C>T               (Ala9Val)           44.3 479    1    -41SNV missense        0.430176   0.333374Benign   no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                                                                                                                     multiple_submitters;
+POT1     NM_015450.3   MANE Select D   c.1164-13C>T          NP_056265.2:p.(=)    51 459    14      0SNV intronic        0.399186   0.398028Benign   no_conflicts
+
+
+         .                        D                                              51.5 555            SNV intergenic      0.485257   0.479068Benign
+
+
+
+PMS2     NM_000535.7   MANE Select D   c.705+17A>G           NP_000526.2:p.(=)    52 537     6      0SNV intronic        0.341037   0.393968Benign   reviewed_by_expert_pane
+                                                                                                                                                     criteria_provided;
+                                                                                                                                                     multiple_submitters;
+POT1     NM_015450.3   MANE Select D   c.702+8_702+9delinsTG NP_056265.2:p.(=)   43.5 336    9      0SNV intronic                           VUS      no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                                                                                                                     multiple_submitters;
+POT1     NM_015450.3   MANE Select D   c.1006+16A>G          NP_056265.2:p.(=)   99.6 475   12      0SNV intronic        0.706189   0.683346Benign   no_conflicts
+                                                                                                                                                     criteria_provided;
+                                                                                                                                                     multiple_submitters;
+PMS2     NM_000535.7   MANE Select D   c.251-20T>G           NP_000526.2:p.(=)   48.2 519    4      0SNV intronic      0.000873150.00201346Benign    no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_000236.2:p.                                                                         multiple_submitters;
+MET     NM_000245.4   MANE Select D   c.4092G>A            (Pro1364=)          99.8 440   21   157SNV synonymous      0.350602   0.444462Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                                                                                                                  multiple_submitters;
+WRN     NM_000553.6   MANE Select D   c.1982-5del          NP_000544.2:p.(=)   99.8 467   18     0INDELintronic       0.983231   0.998274Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_000544.2:p.                                                                         multiple_submitters;
+WRN     NM_000553.6   MANE Select D   c.3222G>T            (Leu1074Phe)        49.5 507   26   -12SNV missense        0.461755   0.449151Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_002476.2:p.                                                                         multiple_submitters;
+NBN     NM_002485.5   MANE Select D   c.553G>C             (Glu185Gln)         100 442     5   -32SNV missense        0.310456   0.331459Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                                                                                                                  multiple_submitters;
+NBN     NM_002485.5   MANE Select D   c.1915-7A>G          NP_002476.2:p.(=)   100 412    13     0SNV intronic        0.332626   0.332698Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                                                                                                                  multiple_submitters;
+WRN     NM_000553.6   MANE Select D   c.355+20A>T          NP_000544.2:p.(=)   42.3 555    4     0SNV intronic       0.0447057   0.058301Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_002476.2:p.                                                                         multiple_submitters;
+NBN     NM_002485.5   MANE Select D   c.1197T>C            (Asp399=)           100 507    10    73SNV synonymous        0.5094   0.398485Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                                                                                                                  multiple_submitters;
+WRN     NM_000553.6   MANE Select D   c.1350+22T>C         NP_000544.2:p.(=)   47.4 405   10     0SNV intronic        0.525641   0.451092Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                                                                                                                  multiple_submitters;
+WRN     NM_000553.6   MANE Select D   c.1577-3C>A          NP_000544.2:p.(=)   51.7 538   13     0SNV intronic       0.0769565 0.0616345Benign    no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_000544.2:p.                                                                         multiple_submitters;
+WRN     NM_000553.6   MANE Select D   c.513C>T             (Cys171=)           100 452     6     9SNV synonymous      0.672486   0.712219Benign   no_conflicts
+
+
+        .                        D                                             100 501            SNV intergenic       0.43535   0.424099Benign
+                                                                                                                                                  criteria_provided;
+                                                                                                                                                  multiple_submitters;
+NBN     NM_002485.5   MANE Select D   c.1124+18C>T         NP_002476.2:p.(=)   100 338     9     0SNV intronic        0.308236   0.333201Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_002476.2:p.                                                                         multiple_submitters;
+NBN     NM_002485.5   MANE Select D   c.2016A>G            (Pro672=)           100 526    13   -55SNV synonymous      0.308146   0.331073Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                                                                                                                  multiple_submitters;
+WRN     NM_000553.6   MANE Select D   c.3572+25_3572+26insCNP_000544.2:p.(=)   99.8 440   30     0INDELintronic       0.977931   0.997729Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                                                                                                                  multiple_submitters;
+WRN     NM_000553.6   MANE Select D   c.655-23T>A          NP_000544.2:p.(=)   49.1 637    7     0SNV intronic       0.0421525 0.0549983Benign    no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_000544.2:p.                                                                         multiple_submitters;
+WRN     NM_000553.6   MANE Select D   c.340G>A             (Val114Ile)         43.9 563    4   -16SNV missense       0.0762854 0.0617794Benign    no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_002476.2:p.                                                                         multiple_submitters;
+NBN     NM_002485.5   MANE Select D   c.102G>A             (Leu34=)            100 608     2    65SNV synonymous      0.332774   0.336142Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                                                                                                                  multiple_submitters;
+WRN     NM_000553.6   MANE Select D   c.3138+7G>A          NP_000544.2:p.(=)   41.5 508   25     0SNV intronic        0.460585   0.447845Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_000544.2:p.                                                                         multiple_submitters;
+WRN     NM_000553.6   MANE Select D   c.2361G>T            (Leu787=)           45.5 510   20    88SNV synonymous      0.445702   0.455801Benign   no_conflicts
+
+
+        .                        D                                             47.6 542           SNV intergenic      0.531635   0.488549Benign
+                                                                                                                                                  criteria_provided;
+                                                           NP_000255.2:p.                                                                         multiple_submitters;
+PTCH1   NM_000264.5   MANE Select D   c.3944C>T            (Pro1315Leu)        56.8 412   23   140SNV missense        0.329831   0.355645Benign   no_conflicts
+
+                                                                                                                                                  criteria_provided;
+PTCH1   NM_000264.5   MANE Select D   c.1215+23G>A         NP_000255.2:p.(=)   56.6 505    8     0SNV intronic      0.001727130.00274594Benign    single_submitter
+                                                                                                                                                  criteria_provided;
+                                                                                                                                                  multiple_submitters;
+RET     NM_020975.6   MANE Select D   c.3187+47T>C         NP_066124.1:p.(=)   100 549    19     0SNV intronic        0.830911   0.812023Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_066124.1:p.                                                                         multiple_submitters;
+RET     NM_020975.6   MANE Select D   c.135A>G             (Ala45=)            100 589     2    62SNV synonymous      0.785281   0.740898Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_066124.1:p.                                                                         multiple_submitters;
+RET     NM_020975.6   MANE Select D   c.2307G>T            (Leu769=)           100 568    13    23SNV synonymous      0.784753   0.755315Benign   no_conflicts
+
+                                                           NP_066124.1:p.                                                                         conflicting_classifications;
+RET     NM_020975.6   MANE Select D   c.2071G>A            (Gly691Ser)         41.3 649   11   -66SNV missense        0.169544   0.185227Benign   criteria_provided
+                                                                                                                                                  criteria_provided;
+                                                           NP_066124.1:p.                                                                         multiple_submitters;
+RET     NM_020975.6   MANE Select D   c.1296A>G            (Ala432=)           48.5 487    7    33SNV synonymous      0.742584   0.695528Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                                                                                                                  multiple_submitters;
+BMPR1A NM_004329.3    MANE Select D   c.1343-11T>C         NP_004320.2:p.(=)   48.9 513   12     0SNV intronic        0.402302    0.28813Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_057253.2:p.                                                                         multiple_submitters;
+SUFU    NM_016169.4   MANE Select D   c.1299T>C            (Ile433=)           44.3 531   11     3SNV synonymous      0.151609   0.110583Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                                                                                                                  multiple_submitters;
+SUFU    NM_016169.4   MANE Select D   c.*20T>G             NP_057253.2:p.(=)   100 520    12   110SNV 3'UTR           0.998312   0.999737Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_066124.1:p.                                                                         multiple_submitters;
+RET     NM_020975.6   MANE Select D   c.2712C>G            (Ser904=)           52.9 493   15   -19SNV synonymous      0.173299   0.186935Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                                                                                                                  multiple_submitters;
+RET     NM_020975.6   MANE Select D   c.337+9G>A           NP_066124.1:p.(=)   37.2 417    2     0SNV intronic        0.209273   0.254807Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                                                                                                                  multiple_submitters;
+SUFU    NM_016169.4   MANE Select D   c.182+16C>T          NP_057253.2:p.(=)   34.8 454    1     0SNV intronic        0.461104   0.521139Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_004320.2:p.                                                                         multiple_submitters;
+BMPR1A NM_004329.3    MANE Select D   c.4C>A               (Pro2Thr)           50.9 497    3   -64SNV missense         0.40437   0.285865Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_001291646.4:p.                                                                      multiple_submitters;
+PTEN    NM_001304717.5Longest    D    c.194G>C             (Cys65Ser)          97.1 308    2    40SNV missense        0.999921    0.99193Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                                                                                                                  multiple_submitters;
+SUFU    NM_016169.4   MANE Select D   c.1365+19T>C         NP_057253.2:p.(=)   99.6 482   11     0SNV intronic        0.682845   0.651306Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                                                                                                                  multiple_submitters;
+ATM     NM_000051.4   MANE Select D   c.3403-13dup         NP_000042.3:p.(=)   38.3 295   24     0INDELintronic       0.551333   0.557245Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_077744.4:p.                                                                         multiple_submitters;
+WT1     NM_024426.6   MANE Select D   c.1122A>G            (Arg374=)           48.5 503    7     9SNV synonymous      0.181247   0.180297Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_001357188.2:p.                                                                      multiple_submitters;
+MEN1    NM_001370259.2MANE Select D   c.1254C>T            (Asp418=)           47.8 578    9    69SNV synonymous      0.318174   0.404746Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_001357188.2:p.                                                                      multiple_submitters;
+MEN1    NM_001370259.2MANE Select D   c.1299T>C            (His433=)           100 566     9   -52SNV synonymous      0.977969    0.99779Benign   no_conflicts
+                                                                                                                                                  criteria_provided;
+                                                           NP_077744.4:p.                                                                         multiple_submitters;
+WT1     NM_024426.6   MANE Select D   c.345C>T             (Pro115=)           37.1 499    1   -317SNV synonymous     0.168253   0.169751Benign   no_conflicts
+                                                                                                                                            criteria_provided;
+                                                     NP_001357188.2:p.                                                                      multiple_submitters;
+MEN1    NM_001370259.2MANE Select D   c.1621A>G      (Thr541Ala)         99.8 645   10    271SNV missense       0.897354    0.97725Benign   no_conflicts
+
+
+        .                        D                                       53.1 524            SNV intergenic     0.520129   0.527111Benign
+                                                                                                                                            criteria_provided;
+                                                     NP_003968.3:p.                                                                         multiple_submitters;
+AIP     NM_003977.4   MANE Select D   c.682C>A       (Gln228Lys)         100 502     5     37SNV missense       0.853771   0.984749Benign   no_conflicts
+
+
+        .                        D                                       46.9 540            SNV intergenic     0.399158   0.434383Benign
+                                                                                                                                            criteria_provided;
+                                                                                                                                            multiple_submitters;
+POLE    NM_006231.4   MANE Select D   c.5812-21G>A   NP_006222.2:p.(=)   47.2 564   43      0SNV intronic       0.670961   0.604242Benign   no_conflicts
+                                                                                                                                            criteria_provided;
+                                                                                                                                            multiple_submitters;
+CDKN1B NM_004064.5    MANE Select D   c.-79T>C       NP_004055.1:p.(=)   100 568     1    394SNV 5'UTR          0.700752   0.748112Benign   no_conflicts
+                                                                                                                                            criteria_provided;
+                                                                                                                                            multiple_submitters;
+POLE    NM_006231.4   MANE Select D   c.6330+15G>A   NP_006222.2:p.(=)   50.4 670   45      0SNV intronic       0.499546   0.451749Benign   no_conflicts
+                                                                                                                                            criteria_provided;
+                                                     NP_006222.2:p.                                                                         multiple_submitters;
+POLE    NM_006231.4   MANE Select D   c.6252A>G      (Ser2084=)          50.3 622   45    -79SNV synonymous     0.659093   0.603116Benign   no_conflicts
+                                                                                                                                            criteria_provided;
+                                                                                                                                            multiple_submitters;
+POLE    NM_006231.4   MANE Select D   c.62+15C>T     NP_006222.2:p.(=)   44.7 441    1      0SNV intronic        0.43707   0.525465Benign   no_conflicts
+                                                                                                                                            criteria_provided;
+                                                     NP_006222.2:p.                                                                         multiple_submitters;
+POLE    NM_006231.4   MANE Select D   c.4530A>G      (Ala1510=)          54.7 621   35    -22SNV synonymous     0.535391   0.456319Benign   no_conflicts
+                                                                                                                                            criteria_provided;
+                                                     NP_006222.2:p.                                                                         multiple_submitters;
+POLE    NM_006231.4   MANE Select D   c.3156G>A      (Thr1052=)          48.1 591   26     96SNV synonymous     0.535574   0.456515Benign   no_conflicts
+                                                                                                                                            criteria_provided;
+                                                     NP_004055.1:p.                                                                         multiple_submitters;
+CDKN1B NM_004064.5    MANE Select D   c.326T>G       (Val109Gly)         56.3 677    1   -150SNV missense       0.369659   0.246631Benign   no_conflicts
+                                                                                                                                            criteria_provided;
+                                                                                                                                            multiple_submitters;
+POLE    NM_006231.4   MANE Select D   c.3582+17A>G   NP_006222.2:p.(=)   99.8 591   29      0SNV intronic       0.974567   0.963304Benign   no_conflicts
+                                                                                                                                            criteria_provided;
+                                                                                                                                            multiple_submitters;
+POLE    NM_006231.4   MANE Select D   c.910-6G>C     NP_006222.2:p.(=)   48.8 541   10      0SNV intronic       0.649138   0.677629Benign   no_conflicts
+                                                                                                                                            criteria_provided;
+                                                                                                                                            multiple_submitters;
+POLE    NM_006231.4   MANE Select D   c.6657+16C>T   NP_006222.2:p.(=)   45.4 573   47      0SNV intronic       0.352679   0.325486Benign   no_conflicts
+                                                                                                                                            criteria_provided;
+                                                                                                                                            multiple_submitters;
+RB1     NM_000321.3   MANE Select D   c.500+23T>G    NP_000312.2:p.(=)   100 322     4      0SNV intronic       0.934388   0.977698Benign   no_conflicts
+
+
+        .                        D                                       52.3 543            SNV intergenic     0.390851   0.337349Benign
+
+                                                     NP_000050.3:p.
+BRCA2   NM_000059.4   MANE Select D   c.4563A>G      (Leu1521=)          99.7 371   11   -2279SNV synonymous    0.978627   0.997681Benign   reviewed_by_expert_pane
+                                                                                                                                            criteria_provided;
+                                                     NP_000050.3:p.                                                                         multiple_submitters;
+BRCA2   NM_000059.4   MANE Select D   c.7397T>C      (Val2466Ala)        100 423    14    -39SNV missense       0.980573   0.997912Benign   no_conflicts
+
+                                                     NP_000050.3:p.
+BRCA2   NM_000059.4   MANE Select D   c.6513G>C      (Val2171=)          100 476    11   -329SNV synonymous     0.978495   0.997669Benign   reviewed_by_expert_pane
+
+                                                     NP_000050.3:p.
+BRCA2   NM_000059.4   MANE Select D   c.3396A>G      (Lys1132=)          45.4 379   11   1487SNV synonymous     0.284122   0.308745Benign   reviewed_by_expert_pane
+
+
+BRCA2   NM_000059.4   MANE Select D   c.-26G>A       NP_000050.3:p.(=)   49.5 509    2     14SNV 5'UTR          0.213201   0.262095Benign   reviewed_by_expert_pane
+                                                                                                                                            criteria_provided;
+                                                                                                                                            multiple_submitters;
+RB1     NM_000321.3   MANE Select D   c.2664-10T>A   NP_000312.2:p.(=)   52.9 518   26      0SNV intronic       0.201759   0.249318Benign   no_conflicts
+
+                                                     NP_000050.3:p.
+BRCA2   NM_000059.4   MANE Select D   c.1114A>C      (Asn372His)         48.9 466   10    321SNV missense       0.237915   0.280542Benign   reviewed_by_expert_pane
+                                                                                                                                            criteria_provided;
+                                                     NP_001035197.1:p.                                                                      multiple_submitters;
+MLH3    NM_001040108.2MANE Select D   c.2531C>T      (Pro844Leu)         46.2 481    2   -750SNV missense       0.422546    0.44873Benign   no_conflicts
+                                                                                                                                            criteria_provided;
+                                                     NP_001035197.1:p.                                                                      multiple_submitters;
+MLH3    NM_001040108.2MANE Select D   c.4335A>G      (Gln1445=)          51.4 656   13     93SNV synonymous     0.526132   0.537141Benign   no_conflicts
+                                                                                                                                            criteria_provided;
+                                                     NP_001035197.1:p.                                                                      multiple_submitters;
+MLH3    NM_001040108.2MANE Select D   c.2476A>G      (Asn826Asp)         100 506     2   -805SNV missense       0.989006   0.998905Benign   no_conflicts
+
+
+        .                        D                                       53.4 586            SNV intergenic     0.610816   0.672545Benign
+                                                                                                                                            criteria_provided;
+                                                                                                                                            multiple_submitters;
+TSC2    NM_000548.5   MANE Select D   c.482-3C>T     NP_000539.2:p.(=)   44.9 615    6      0SNV intronic       0.123139 0.0921552Benign    no_conflicts
+                                                                                                                                            criteria_provided;
+                                                     NP_000539.2:p.                                                                         multiple_submitters;
+TSC2    NM_000548.5   MANE Select D   c.5397G>C      (Ser1799=)          50.3 582   42    138SNV synonymous    0.0650381 0.0883617Benign    no_conflicts
+
+
+CDH1    NM_004360.5   MANE Select D   c.48+6C>T      NP_004351.1:p.(=)   99.8 587    1      0SNV intronic       0.804646   0.866552Benign   reviewed_by_expert_pane
+                                                                                                                                            criteria_provided;
+                                                                                                                                            multiple_submitters;
+TSC2    NM_000548.5   MANE Select D   c.1600-14C>T   NP_000539.2:p.(=)   49.2 465   16      0SNV intronic      0.0482682 0.0634995Benign    no_conflicts
+
+                                                     NP_004351.1:p.
+CDH1    NM_004360.5   MANE Select D   c.2076T>C      (Ala692=)           45.6 588   13    -89SNV synonymous     0.698601   0.635441Benign   reviewed_by_expert_pane
+                                                                                                                                            criteria_provided;
+                                                                                                                                            multiple_submitters;
+TSC2    NM_000548.5   MANE Select D   c.2546-12C>T   NP_000539.2:p.(=)   46.1 564   23      0SNV intronic       0.203735 0.0800503Benign    no_conflicts
+                                                                                                                                            criteria_provided;
+                                                     NP_000539.2:p.                                                                         multiple_submitters;
+TSC2    NM_000548.5   MANE Select D   c.1578C>T      (Ser526=)           46.7 670   15    -22SNV synonymous    0.0488809 0.0638042Benign    no_conflicts
+                                                                                                                                            criteria_provided;
+                                                     NP_000539.2:p.                                                                         multiple_submitters;
+TSC2    NM_000548.5   MANE Select D   c.5202T>C      (Asp1734=)          100 603    41     42SNV synonymous     0.345518   0.178583Benign   no_conflicts
+                                                                                                                                            criteria_provided;
+                                                     NP_000539.2:p.                                                                         multiple_submitters;
+TSC2    NM_000548.5   MANE Select D   c.2580T>C      (Phe860=)           46.4 634   23     35SNV synonymous     0.078131 0.0785984Benign    no_conflicts
+                                                                                                                                            criteria_provided;
+                                                                                                                                            multiple_submitters;
+TSC2    NM_000548.5   MANE Select D   c.5161-10A>C   NP_000539.2:p.(=)   100 537    41      0SNV intronic       0.299625   0.209201Benign   no_conflicts
+
+
+        .                        D                                        51 600             SNV intergenic     0.487255   0.487736Benign
+                                                                                                                                            criteria_provided;
+                                                                                                                                            multiple_submitters;
+TSC2    NM_000548.5   MANE Select D   c.5260-25C>G   NP_000539.2:p.(=)   52.6 665   42      0SNV intronic        0.21352   0.107083Benign   no_conflicts
+                                                                                                                                            criteria_provided;
+                                                     NP_004646.3:p.                                                                         multiple_submitters;
+AXIN2   NM_004655.4   MANE Select D   c.1365A>G      (Pro455=)           100 471     6    165SNV synonymous     0.904451   0.894319Benign   no_conflicts
+                                                                                                                                                    criteria_provided;
+                                                      NP_001035957.1:p.                                                                             multiple_submitters;
+NF1     NM_001042492.3MANE Select D   c.7970+166C>T   (=)                 100 498    54      0SNV intronic        0.473262   0.574056Benign         no_conflicts
+
+                                                      NP_001035957.1:p.                                                                             conflicting_classifications;
+NF1     NM_001042492.3MANE Select D   c.3867C>T       (Phe1289=)          50.4 655   28     -4SNV synonymous 0.0008800620.00135249Likely_benign     criteria_provided
+
+                                                      NP_009225.1:p.
+BRCA1   NM_007294.4   MANE Select D   c.2082C>T       (Ser694=)           47.8 596   10   1412SNV synonymous      0.315666    0.33826Benign         reviewed_by_expert_pane
+
+                                                      NP_009225.1:p.
+BRCA1   NM_007294.4   MANE Select D   c.3548A>G       (Lys1183Arg)        50.9 582   10   -549SNV missense        0.315439   0.338301Benign         reviewed_by_expert_pane
+
+                                                      NP_009225.1:p.
+BRCA1   NM_007294.4   MANE Select D   c.2315T>C       (Val772Ala)         51.2 494   10   1645SNV missense     0.0001248360.00025586Likely_benign   reviewed_by_expert_pane
+                                                                                                                                                    criteria_provided;
+                                                      NP_060233.3:p.                                                                                multiple_submitters;
+RNF43   NM_017763.6   MANE Select D   c.2057C>G       (Pro686Arg)          49 545     9   -252SNV missense        0.111685   0.114277Benign         no_conflicts
+                                                                                                                                                    criteria_provided;
+                                                      NP_114432.2:p.                                                                                multiple_submitters;
+BRIP1   NM_032043.3   MANE Select D   c.2755T>C       (Ser919Pro)         100 548    19   -151SNV missense        0.611989   0.593006Benign         no_conflicts
+
+                                                      NP_009225.1:p.
+BRCA1   NM_007294.4   MANE Select D   c.3113A>G       (Glu1038Gly)        47.7 556   10   -984SNV missense        0.300105   0.337279Benign         reviewed_by_expert_pane
+                                                                                                                                                    criteria_provided;
+                                                      NP_006352.2:p.                                                                                multiple_submitters;
+HOXB13 NM_006361.6    MANE Select D   c.366C>T        (Ser122=)           44.7 629    1   -236SNV synonymous      0.172603   0.134883Benign         no_conflicts
+                                                                                                                                                    criteria_provided;
+                                                      NP_001035957.1:p.                                                                             multiple_submitters;
+NF1     NM_001042492.3MANE Select D   c.5609+19T>A    (=)                 100 581    38      0SNV intronic        0.501697   0.589365Benign         no_conflicts
+
+                                                      NP_009225.1:p.
+BRCA1   NM_007294.4   MANE Select D   c.2311T>C       (Leu771=)           50.9 495   10   1641SNV synonymous      0.299324   0.336032Benign         reviewed_by_expert_pane
+
+                                                      NP_000537.3:p.
+TP53    NM_000546.6   MANE Select D   c.215C>G        (Pro72Arg)          50.8 516    4    119SNV missense        0.626776   0.716318Benign         reviewed_by_expert_pane
+                                                                                                                                                    criteria_provided;
+                                                      NP_004646.3:p.                                                                                multiple_submitters;
+AXIN2   NM_004655.4   MANE Select D   c.148C>T        (Pro50Ser)          100 552     2    264SNV missense        0.395652   0.501943Benign         no_conflicts
+                                                                                                                                                    criteria_provided;
+                                                      NP_114432.2:p.                                                                                multiple_submitters;
+BRIP1   NM_032043.3   MANE Select D   c.3411T>C       (Tyr1137=)          100 636    20    506SNV synonymous      0.605006    0.59168Benign         no_conflicts
+                                                                                                                                                    criteria_provided;
+                                                      NP_060233.3:p.                                                                                multiple_submitters;
+RNF43   NM_017763.6   MANE Select D   c.692C>T        (Pro231Leu)         49.8 609    7      5SNV missense        0.136895   0.178377Benign         no_conflicts
+
+                                                      NP_009225.1:p.
+BRCA1   NM_007294.4   MANE Select D   c.2612C>T       (Pro871Leu)          49 632    10   -1485SNV missense       0.487427   0.364494Benign         reviewed_by_expert_pane
+
+                                                      NP_009225.1:p.
+BRCA1   NM_007294.4   MANE Select D   c.4308T>C       (Ser1436=)          50.4 605   12    -50SNV synonymous      0.300623   0.337584Benign         reviewed_by_expert_pane
+                                                                                                                                                    criteria_provided;
+                                                      NP_114432.2:p.                                                                                multiple_submitters;
+BRIP1   NM_032043.3   MANE Select D   c.2637A>G       (Glu879=)           100 597    19     62SNV synonymous       0.74246   0.681255Benign         no_conflicts
+                                                                                                                                                    criteria_provided;
+                                                      NP_004646.3:p.                                                                                multiple_submitters;
+AXIN2   NM_004655.4   MANE Select D   c.1386C>T       (Pro462=)           100 462     6    186SNV synonymous      0.527967   0.637468Benign         no_conflicts
+                                                                                                                                                    criteria_provided;
+                                                      NP_001035957.1:p.                                                                             multiple_submitters;
+NF1     NM_001042492.3MANE Select D   c.5268+23T>C    (=)                 100 562    37      0SNV intronic        0.647165   0.618697Benign         no_conflicts
+                                                                                                                                                    criteria_provided;
+                                                                                                                                                    multiple_submitters;
+FLCN    NM_144997.7   MANE Select D   c.397-14C>T     NP_659434.2:p.(=)   51.1 550    6      0SNV intronic        0.407182   0.478338Benign         no_conflicts
+
+                                                      NP_009225.1:p.
+BRCA1   NM_007294.4   MANE Select D   c.4837A>G       (Ser1613Gly)        44.9 623   15   -150SNV missense        0.317829   0.339841Benign         reviewed_by_expert_pane
+                                                                                                                                                    criteria_provided;
+                                                                                                                                                    multiple_submitters;
+FLCN    NM_144997.7   MANE Select D   c.1062+6C>T     NP_659434.2:p.(=)   43.5 480    9      0SNV intronic        0.471856     0.4904Benign         no_conflicts
+
+
+BRCA1   NM_007294.4   MANE Select D   c.-20+101C>G    NP_009225.1:p.(=)   44.2 260    1      0SNV intronic        0.505568   0.401118Benign         reviewed_by_expert_pane
+                                                                                                                                                    criteria_provided;
+                                                      NP_001035957.1:p.                                                                             multiple_submitters;
+NF1     NM_001042492.3MANE Select D   c.702G>A        (Leu234=)           100 463     7    -29SNV synonymous      0.571812   0.675105Benign         no_conflicts
+
+
+        .                        D                                        49.2 531            SNV intergenic      0.644093   0.689172Benign
+                                                                                                                                                    criteria_provided;
+                                                                                                                                                    multiple_submitters;
+POLD1   NM_002691.4   MANE Select D   c.2953+12C>T    NP_002682.2:p.(=)   99.7 362   23      0SNV intronic        0.551749   0.645285Benign         no_conflicts
+                                                                                                                                                    criteria_provided;
+                                                      NP_003063.2:p.                                                                                multiple_submitters;
+SMARCA4NM_003072.5    MANE Select D   c.4584C>T       (Asp1528=)          46.8 694   32     51SNV synonymous     0.0389303 0.0522743Benign          no_conflicts
+                                                                                                                                                    criteria_provided;
+                                                                                                                                                    multiple_submitters;
+STK11   NM_000455.5   MANE Select D   c.374+24G>T     NP_000446.1:p.(=)   42.7 700    2      0SNV intronic        0.197747   0.127548Benign         no_conflicts
+
+
+        .                        D                                         54 522             SNV intergenic      0.510532   0.503818Benign
+                                                                                                                                                    criteria_provided;
+                                                      NP_003063.2:p.                                                                                multiple_submitters;
+SMARCA4NM_003072.5    MANE Select D   c.4887T>C       (Asp1629=)          100 647    34    -25SNV synonymous      0.281308   0.297488Benign         no_conflicts
+                                                                                                                                                    criteria_provided;
+                                                      NP_003063.2:p.                                                                                multiple_submitters;
+SMARCA4NM_003072.5    MANE Select D   c.1524T>C       (His508=)           100 627     9    -70SNV synonymous      0.324778   0.352198Benign         no_conflicts
+                                                                                                                                                    criteria_provided;
+                                                                                                                                                    multiple_submitters;
+SMARCA4NM_003072.5    MANE Select D   c.4768+15G>C    NP_003063.2:p.(=)   50.6 631   33      0SNV intronic       0.0080282 0.0128782Benign          no_conflicts
+
+
+        .                        D                                         49 625             SNV intergenic      0.520668    0.52748Benign
+
+                                                      NP_006354.2:p.                                                                                conflicting_classifications;
+SEC23B NM_006363.6    MANE Select D   c.770C>T        (Thr257Ile)         49.5 523    7    -65SNV missense       0.0100332 0.0141039Benign          criteria_provided
+                                                                                                                                                    criteria_provided;
+                                                                                                                                                    multiple_submitters;
+SEC23B NM_006363.6    MANE Select D   c.1744-20T>A    NP_006354.2:p.(=)   48.7 587   16      0SNV intronic        0.340544   0.395414Benign         no_conflicts
+
+
+        .                        D                                        54.8 573            SNV intergenic      0.605061   0.598671Benign
+                                                                                                                                                    criteria_provided;
+                                                                                                                                                    multiple_submitters;
+LZTR1   NM_006767.4   MANE Select D   c.1785+21A>G    NP_006758.2:p.(=)   99.8 497   15      0SNV intronic        0.791951    0.76687Benign         no_conflicts
+
+
+        .                        D                                        100 612             SNV intergenic      0.487385   0.445941Benign
+
+
+SMARCB1NM_003073.5    MANE Select D   c.629-384G>A    NP_003064.2:p.(=)   100 569     6      0SNV intronic        0.384657   0.460934Benign
+                                                                                                                                                    criteria_provided;
+                                                                                                                                                    multiple_submitters;
+LZTR1   NM_006767.4   MANE Select D   c.994-18T>C     NP_006758.2:p.(=)   100 634    10      0SNV intronic        0.713336   0.747816Benign         no_conflicts
+
