@@ -14,6 +14,7 @@ type Conversation = {
   id: string;
   title: string;
   messages: Message[];
+  qaSummaryGenerated?: boolean;
 };
 
 type SendOptions = {
@@ -449,6 +450,10 @@ export default function ChatPage() {
     setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
   }
 
+  function markQaSummaryGenerated(id: string) {
+    setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, qaSummaryGenerated: true } : c)));
+  }
+
   function startNewConversation() {
     const c = newConversation();
     setConversations((prev) => [c, ...prev]);
@@ -712,6 +717,7 @@ export default function ChatPage() {
       if (options.intent === "qa-summary") {
         const summarySampleId = options.sampleId || inferSampleId(accumulated);
         if (summarySampleId) addRecommendedActionTasks(summarySampleId, accumulated);
+        markQaSummaryGenerated(convId);
       }
     } catch (err) {
       updateMessages(convId, (msgs) => {
@@ -862,7 +868,7 @@ export default function ChatPage() {
         )}
 
         <div className="gpt-input-wrap">
-          {messages.length > 0 ? (
+          {messages.length > 0 && !active.qaSummaryGenerated ? (
             <div className="gpt-inline-summary" aria-label="Create QA report summary">
               <select
                 value={selectedSampleId}

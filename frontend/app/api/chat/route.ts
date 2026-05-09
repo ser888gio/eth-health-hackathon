@@ -197,6 +197,7 @@ async function generateAnswer(
   const anthropic = getAI();
 
   const context = formatContext(chunks);
+  const maxTokens = intent === "qa-summary" ? 4096 : 1536;
   const responseInstructions =
     intent === "smart-case-summary"
       ? `Produce a Smart Case Summary for fast triage.
@@ -232,7 +233,7 @@ ${context}`;
       try {
         const response = anthropic.messages.stream({
           model: "claude-sonnet-4-6",
-          max_tokens: 1024,
+          max_tokens: maxTokens,
           system: systemPrompt,
           messages: [{ role: "user", content: question }],
         });
