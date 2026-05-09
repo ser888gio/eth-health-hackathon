@@ -16,8 +16,8 @@ def _client() -> ElevenLabs:
 
 def _voice_id(speaker: str) -> str:
     if speaker.lower() == "alex":
-        return os.getenv("ELEVENLABS_VOICE_ALEX", "")
-    return os.getenv("ELEVENLABS_VOICE_SAM", "")
+        return os.getenv("ELEVENLABS_VOICE_ASHER", "")
+    return os.getenv("ELEVENLABS_VOICE_JAMES", "")
 
 
 def generate_audio(script: list[dict], output_dir: str = "output") -> list[Path]:

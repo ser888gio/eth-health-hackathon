@@ -1,12 +1,13 @@
 import json
 import os
 
-import anthropic
 from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 
 load_dotenv()
 
-MODEL = "claude-opus-4-7"
+MODEL = "gemini-2.5-flash-preview-05-20"
 
 SYSTEM_PROMPTS = {
     "lab": (
@@ -48,6 +49,15 @@ Respond ONLY with valid JSON in this exact shape:
 }}"""
 
 
+def _strip_fences(raw: str) -> str:
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    return raw.strip()
+
+
 def summarize(report: dict, audience: str = "lab") -> dict:
     if audience not in SYSTEM_PROMPTS:
         raise ValueError(f"audience must be one of {list(SYSTEM_PROMPTS)}")
@@ -58,20 +68,18 @@ def summarize(report: dict, audience: str = "lab") -> dict:
         qc_data=json.dumps(report, indent=2),
     )
 
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-    message = client.messages.create(
+    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    response = client.models.generate_content(
         model=MODEL,
-        max_tokens=1024,
-        system=SYSTEM_PROMPTS[audience],
-        messages=[{"role": "user", "content": user_prompt}],
+        contents=user_prompt,
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPTS[audience],
+            max_output_tokens=1024,
+            temperature=0.3,
+        ),
     )
 
-    raw = message.content[0].text.strip()
-    # Strip markdown code fences if present
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
+    raw = _strip_fences(response.text)
     return json.loads(raw)
 
 

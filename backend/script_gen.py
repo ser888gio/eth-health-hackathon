@@ -1,12 +1,13 @@
 import json
 import os
 
-import anthropic
 from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 
 load_dotenv()
 
-MODEL = "claude-opus-4-7"
+MODEL = "gemini-2.5-flash-preview-05-20"
 
 SCRIPT_SYSTEM = {
     "lab": (
@@ -49,25 +50,33 @@ Rules:
 - Do not repeat the same information twice"""
 
 
+def _strip_fences(raw: str) -> str:
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    return raw.strip()
+
+
 def generate_script(summary: dict, audience: str = "lab") -> list[dict]:
     if audience not in SCRIPT_SYSTEM:
         raise ValueError(f"audience must be one of {list(SCRIPT_SYSTEM)}")
 
     user_prompt = SCRIPT_USER_TEMPLATE.format(summary_json=json.dumps(summary, indent=2))
 
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-    message = client.messages.create(
+    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    response = client.models.generate_content(
         model=MODEL,
-        max_tokens=2048,
-        system=SCRIPT_SYSTEM[audience],
-        messages=[{"role": "user", "content": user_prompt}],
+        contents=user_prompt,
+        config=types.GenerateContentConfig(
+            system_instruction=SCRIPT_SYSTEM[audience],
+            max_output_tokens=2048,
+            temperature=0.7,
+        ),
     )
 
-    raw = message.content[0].text.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
+    raw = _strip_fences(response.text)
     return json.loads(raw)
 
 
