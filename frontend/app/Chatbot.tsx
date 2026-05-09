@@ -984,7 +984,9 @@ export default function ChatPage() {
                       </div>
                     </div>
                   ) : (
-                    <p>{task.note}</p>
+                    <div className="gpt-todo-note">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{task.note}</ReactMarkdown>
+                    </div>
                   )}
                 </div>
                 {editingTaskId === task.id ? null : (

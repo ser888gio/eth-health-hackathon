@@ -1256,6 +1256,10 @@ a {
   overflow-wrap: anywhere;
 }
 
+.gpt-todo-note p {
+  margin: 0;
+}
+
 .gpt-todo-item.completed .gpt-todo-body p {
   text-decoration: line-through;
 }
