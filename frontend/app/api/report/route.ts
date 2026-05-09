@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-const reportPath = path.join(process.cwd(), "..", "backend", "report.pdf");
+const reportPath = path.join(process.cwd(), "..", "backend", "summarisation", "report.pdf");
 
 const baseHeaders = {
   "Content-Type": "application/pdf",

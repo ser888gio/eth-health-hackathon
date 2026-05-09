@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import ChatPage from "./Chatbot";
 
-const moduleTabs = ["Overview", "Quality", "Genes", "Variants", "Report"];
+const moduleTabs = ["Overview", "Quality", "Genes", "Variants", "Report", "Chat"];
 const subnavTabs = ["Warnings", "Coverage", "Report"];
 const skinnyTabs = [
   "Transcript",
@@ -43,7 +44,7 @@ export default function Home() {
   const [qaError, setQaError] = useState("");
 
   const reportSrc = useMemo(
-    () => `/api/report#toolbar=0&navpanes=0&scrollbar=1&page=${page}&zoom=${zoom}`,
+    () => `/api/report#toolbar=0&navpanes=0&pagemode=none&scrollbar=1&page=${page}&zoom=${zoom}`,
     [page, zoom],
   );
 
@@ -99,6 +100,8 @@ export default function Home() {
         setQaStatus("error");
       });
   };
+
+  const isChat = activeModule === "Chat";
 
   return (
     <>
@@ -223,96 +226,57 @@ export default function Home() {
           </section>
         </header>
 
-        <section className="subnav" aria-label="Quality navigation">
-          {subnavTabs.map((tab) => (
-            <button
-              className={activeSubnav === tab ? "selected" : ""}
-              key={tab}
-              onClick={() => setActiveSubnav(tab)}
-            >
-              {tab}
-              {tab === "Warnings" ? <span>38</span> : null}
-            </button>
-          ))}
-          <button
-            className={`pdf-link ${activeDocument === "sample" ? "primary" : ""}`}
-            onClick={() => setActiveDocument("sample")}
-          >
-            Sample (QA-patient.pdf)
-          </button>
-          <button
-            className={`pdf-link ${activeDocument === "request" ? "primary" : ""}`}
-            onClick={() => setActiveDocument("request")}
-          >
-            Request (QA-report.pdf)
-          </button>
-        </section>
+        {isChat ? (
+          <ChatPage />
+        ) : (
+          <>
+            <section className="subnav" aria-label="Quality navigation">
+              {subnavTabs.map((tab) => (
+                <button
+                  className={activeSubnav === tab ? "selected" : ""}
+                  key={tab}
+                  onClick={() => setActiveSubnav(tab)}
+                >
+                  {tab}
+                  {tab === "Warnings" ? <span>38</span> : null}
+                </button>
+              ))}
+              <button
+                className={`pdf-link ${activeDocument === "sample" ? "primary" : ""}`}
+                onClick={() => setActiveDocument("sample")}
+              >
+                Sample (QA-patient.pdf)
+              </button>
+              <button
+                className={`pdf-link ${activeDocument === "request" ? "primary" : ""}`}
+                onClick={() => setActiveDocument("request")}
+              >
+                Request (QA-report.pdf)
+              </button>
+            </section>
 
-        <section className="viewer-shell">
-          {activeDocument === "sample" ? (
-            <object
-              className="pdf-frame"
-              data={reportSrc}
-              type="application/pdf"
-              aria-label="Quality report PDF"
-            >
-              <iframe className="pdf-frame" title="Quality report PDF" src={reportSrc} />
-            </object>
-          ) : (
-            <QaSummaryReport
-              report={qaReport}
-              status={qaStatus}
-              error={qaError}
-              onRegenerate={regenerateQaReport}
-            />
-          )}
-        </section>
+            <section className="viewer-shell">
+              {activeDocument === "sample" ? (
+                <object
+                  className="pdf-frame"
+                  data={reportSrc}
+                  type="application/pdf"
+                  aria-label="Quality report PDF"
+                >
+                  <iframe className="pdf-frame" title="Quality report PDF" src={reportSrc} />
+                </object>
+              ) : (
+                <QaSummaryReport
+                  report={qaReport}
+                  status={qaStatus}
+                  error={qaError}
+                  onRegenerate={regenerateQaReport}
+                />
+              )}
+            </section>
 
-        {activeDocument === "sample" ? (
-          <div className="pdf-controls" aria-label="PDF controls">
-          <button
-            aria-label="Zoom out"
-            title="Zoom out"
-            onClick={() => setZoom((current) => String(Math.max(50, Number(current) - 25)))}
-          />
-          <button
-            aria-label="Zoom in"
-            title="Zoom in"
-            onClick={() => setZoom((current) => String(Math.min(200, Number(current) + 25)))}
-          />
-          <label>
-            <span>{zoom}%</span>
-            <select
-              aria-label="Zoom"
-              value={zoom}
-              onChange={(event) => setZoom(event.target.value)}
-            >
-              <option value="75">75%</option>
-              <option value="100">100%</option>
-              <option value="125">125%</option>
-              <option value="150">150%</option>
-            </select>
-          </label>
-          <button
-            className={page === 1 ? "disabled" : ""}
-            aria-label="Previous page"
-            onClick={() => goToPage(page - 1)}
-          >
-            &larr;
-          </button>
-          <button aria-label="Next page" onClick={() => goToPage(page + 1)}>
-            &rarr;
-          </button>
-          <div className="page-count">
-            <span>{page}</span>
-            <b>12</b>
-          </div>
-          <button aria-label="Print" title="Print" onClick={printReport} />
-          <a className="download" href="/api/report" download="report.pdf">
-            Download
-          </a>
-          </div>
-        ) : null}
+          </>
+        )}
       </main>
     </>
   );

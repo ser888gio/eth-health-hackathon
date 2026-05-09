@@ -6,7 +6,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google/genai": "^2.0.1",
+    "@types/pg": "^8.20.0",
     "next": "latest",
+    "pg": "^8.20.0",
     "react": "latest",
     "react-dom": "latest"
   },
