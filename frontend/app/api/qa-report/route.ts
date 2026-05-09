@@ -9,7 +9,6 @@ export const runtime = "nodejs";
 
 const execFileAsync = promisify(execFile);
 const backendDir = path.join(process.cwd(), "..", "backend");
-const pythonPath = path.join(backendDir, ".venv", "Scripts", "python.exe");
 
 async function loadGeneratedSummary(audience: string) {
   const summaryPath = path.join(backendDir, "output", `summary_${audience}.json`);
@@ -42,7 +41,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    await execFileAsync(pythonPath, ["generate_assets.py", "report.pdf", audience], {
+    await execFileAsync("uv", ["run", "generate_assets.py", "report.pdf", audience], {
       cwd: backendDir,
       timeout: 10 * 60 * 1000,
       maxBuffer: 1024 * 1024 * 4,
