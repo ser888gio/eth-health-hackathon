@@ -6,6 +6,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.95.1",
     "@google/genai": "^2.0.1",
     "@types/pg": "^8.20.0",
     "next": "latest",

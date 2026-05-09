@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Client } from "pg";
-import { GoogleGenAI } from "@google/genai";
+import Anthropic from "@anthropic-ai/sdk";
 
 const DB_CONFIG = {
   host: process.env.POSTGRES_HOST || "localhost",
@@ -13,19 +13,21 @@ const DB_CONFIG = {
 const TOP_K = 5;
 
 function getAI() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
-  return new GoogleGenAI({ apiKey });
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
+  return new Anthropic({ apiKey });
 }
 
 async function embedQuery(query: string): Promise<number[]> {
-  const ai = getAI();
-  const result = await ai.models.embedContent({
-    model: "gemini-embedding-2",
-    contents: query,
-    config: { taskType: "RETRIEVAL_QUERY" },
+  const embedUrl = process.env.EMBED_SERVER_URL || "http://localhost:8000/embed";
+  const res = await fetch(embedUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: query }),
   });
-  return result.embeddings![0].values!;
+  if (!res.ok) throw new Error(`Embed server error: ${res.status}`);
+  const data = await res.json();
+  return data.embedding;
 }
 
 async function retrieveContext(embedding: number[]): Promise<string[]> {
@@ -47,36 +49,37 @@ async function retrieveContext(embedding: number[]): Promise<string[]> {
 }
 
 async function generateAnswer(question: string, chunks: string[]): Promise<ReadableStream<Uint8Array>> {
-  const ai = getAI();
+  const anthropic = getAI();
 
   const context = chunks
     .map((c, i) => `[${i + 1}] ${c}`)
     .join("\n\n");
 
-  const prompt = `You are a clinical genomics assistant helping interpret NGS quality reports.
+  const systemPrompt = `You are a clinical genomics assistant helping interpret NGS quality reports.
 Answer the question using only the provided context. Be concise and precise.
 If the context doesn't contain enough information, say so clearly.
 
 Context:
-${context}
-
-Question: ${question}
-
-Answer:`;
+${context}`;
 
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        const response = await ai.models.generateContentStream({
-          model: "gemini-2.0-flash",
-          contents: prompt,
+        const response = anthropic.messages.stream({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1024,
+          system: systemPrompt,
+          messages: [{ role: "user", content: question }],
         });
+
         for await (const chunk of response) {
-          const text = chunk.text;
-          if (text) {
-            controller.enqueue(encoder.encode(text));
+          if (
+            chunk.type === "content_block_delta" &&
+            chunk.delta.type === "text_delta"
+          ) {
+            controller.enqueue(encoder.encode(chunk.delta.text));
           }
         }
       } catch (err) {
