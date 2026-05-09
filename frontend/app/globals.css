@@ -1069,8 +1069,80 @@ a {
   font-size: 15px;
   line-height: 1.65;
   color: var(--ink);
-  white-space: pre-wrap;
   word-break: break-word;
+}
+
+.gpt-message-text p,
+.gpt-message-text ul,
+.gpt-message-text h3,
+.gpt-message-text h4 {
+  margin: 0 0 12px;
+}
+
+.gpt-message-text > :last-child {
+  margin-bottom: 0;
+}
+
+.gpt-message-text h3 {
+  font-size: 17px;
+  line-height: 1.35;
+  font-weight: 750;
+  color: #1f2740;
+}
+
+.gpt-message-text h4 {
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 750;
+  color: #2d3550;
+}
+
+.gpt-message-text ul {
+  padding-left: 20px;
+}
+
+.gpt-message-text li {
+  margin: 3px 0;
+}
+
+.gpt-message-text hr {
+  border: 0;
+  border-top: 1px solid #d9deed;
+  margin: 14px 0;
+}
+
+.gpt-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin: 10px 0 14px;
+}
+
+.gpt-markdown-table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  border: 1px solid #d7ddeb;
+  background: #fff;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.gpt-markdown-table th,
+.gpt-markdown-table td {
+  padding: 9px 11px;
+  border: 1px solid #d7ddeb;
+  text-align: left;
+  vertical-align: top;
+}
+
+.gpt-markdown-table th {
+  background: #f5f7fb;
+  color: #242d48;
+  font-weight: 750;
+}
+
+.gpt-markdown-table tr:nth-child(even) td {
+  background: #fafbfe;
 }
 
 .gpt-cursor {

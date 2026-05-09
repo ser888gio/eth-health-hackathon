@@ -58,6 +58,13 @@ async function generateAnswer(question: string, chunks: string[]): Promise<Reada
   const systemPrompt = `You are a clinical genomics assistant helping interpret NGS quality reports.
 Answer the question using only the provided context. Be concise and precise.
 If the context doesn't contain enough information, say so clearly.
+Format answers in clean GitHub-flavored Markdown:
+- Use short headings for sections.
+- Use **bold** for important findings, gene names, and warnings.
+- Use *italic* text for clarifying notes or caveats.
+- Use Markdown tables for lists of genes, exons, regions, thresholds, or findings.
+- Prefer bullets only for short supporting details.
+- Do not say you cannot generate visual graphs unless the user explicitly asks for an image/chart file.
 
 Context:
 ${context}`;

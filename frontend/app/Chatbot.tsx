@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 type Message = {
   role: "user" | "assistant";
@@ -13,6 +15,26 @@ type Conversation = {
   title: string;
   messages: Message[];
 };
+
+function MarkdownMessage({ text, streaming }: { text: string; streaming?: boolean }) {
+  return (
+    <div className="gpt-message-text">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          table: ({ children }) => (
+            <div className="gpt-table-wrap">
+              <table className="gpt-markdown-table">{children}</table>
+            </div>
+          ),
+        }}
+      >
+        {text}
+      </ReactMarkdown>
+      {streaming && <span className="gpt-cursor" />}
+    </div>
+  );
+}
 
 const SUGGESTIONS = [
   "What is the overall quality of this sequencing run?",
@@ -243,11 +265,7 @@ export default function ChatPage() {
                   <span className="gpt-message-role">
                     {msg.role === "user" ? "You" : "Assistant"}
                   </span>
-                  <p className="gpt-message-text">
-                    {msg.text}
-                    {msg.streaming && !msg.text && <span className="gpt-cursor" />}
-                    {msg.streaming && msg.text && <span className="gpt-cursor" />}
-                  </p>
+                  <MarkdownMessage text={msg.text} streaming={msg.streaming} />
                 </div>
               </div>
             ))}
