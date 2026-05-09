@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Children, isValidElement, useEffect, useRef, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -16,12 +16,207 @@ type Conversation = {
   messages: Message[];
 };
 
-function MarkdownMessage({ text, streaming }: { text: string; streaming?: boolean }) {
+type TaskTargetType = "sample" | "gene";
+
+type TodoTask = {
+  id: string;
+  targetId: string;
+  targetType: TaskTargetType;
+  note: string;
+  createdAt: string;
+  completed: boolean;
+};
+
+type PendingNote = {
+  targetId: string;
+  targetType: TaskTargetType;
+};
+
+const TODO_STORAGE_KEY = "clinical-chat-tasks-v1";
+
+const SAMPLE_IDS = ["SG063-LPA", "SG220-LPA", "17br088-1-Run1"];
+const SAMPLE_ID_SET = new Set(SAMPLE_IDS.map((id) => id.toLowerCase()));
+const COMMON_TOKEN_SET = new Set([
+  "AI",
+  "BAM",
+  "CNV",
+  "CSV",
+  "DNA",
+  "FASTQ",
+  "HG38",
+  "INDEL",
+  "LPA",
+  "NGS",
+  "PDF",
+  "QA",
+  "Q30",
+  "QC",
+  "RNA",
+  "RUO",
+  "SNP",
+  "TXT",
+  "URL",
+  "VAF",
+]);
+const ID_PATTERN = /(SG063-LPA|SG220-LPA|17br088-1-Run1|\b[A-Z][A-Z0-9]{1,9}\b)/g;
+
+const SUGGESTIONS = [
+  "Compare samples SG063-LPA, SG220-LPA, and 17br088-1-Run1.",
+  "What is the overall quality of this sequencing run?",
+  "Which genes have low coverage regions?",
+  "Summarize the key QA findings",
+  "What are the recurrent low-coverage regions?",
+  "Are there any coverage warnings I should be aware of?",
+];
+
+function newConversation(): Conversation {
+  return { id: crypto.randomUUID(), title: "New conversation", messages: [] };
+}
+
+function targetTypeFor(token: string): TaskTargetType | null {
+  if (SAMPLE_ID_SET.has(token.toLowerCase())) return "sample";
+  if (!/^[A-Z][A-Z0-9]{1,9}$/.test(token)) return null;
+  if (COMMON_TOKEN_SET.has(token)) return null;
+  if (/^\d/.test(token) || /^\d+$/.test(token)) return null;
+  return "gene";
+}
+
+function IdAction({
+  token,
+  targetType,
+  onAddTask,
+}: {
+  token: string;
+  targetType: TaskTargetType;
+  onAddTask: (task: PendingNote & { note: string }) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState("");
+  const trimmed = note.trim();
+
+  function submit() {
+    if (!trimmed) return;
+    onAddTask({ targetId: token, targetType, note: trimmed });
+    setNote("");
+    setOpen(false);
+  }
+
+  return (
+    <span className="gpt-id-action">
+      <span className={`gpt-id-chip ${targetType}`}>{token}</span>
+      <button
+        className="gpt-id-plus"
+        type="button"
+        aria-label={`Add note for ${token}`}
+        title={`Add note for ${token}`}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        </svg>
+      </button>
+      {open ? (
+        <span className="gpt-note-popover">
+          <textarea
+            value={note}
+            rows={2}
+            placeholder={`Note for ${token}`}
+            onChange={(event) => setNote(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                submit();
+              }
+              if (event.key === "Escape") {
+                setOpen(false);
+              }
+            }}
+            autoFocus
+          />
+          <span className="gpt-note-actions">
+            <button type="button" onClick={() => setOpen(false)}>
+              Cancel
+            </button>
+            <button type="button" className="primary" disabled={!trimmed} onClick={submit}>
+              Send
+            </button>
+          </span>
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+function renderIds(children: ReactNode, onAddTask?: (task: PendingNote & { note: string }) => void): ReactNode {
+  if (!onAddTask) return children;
+
+  return Children.map(children, (child) => {
+    if (typeof child === "string") {
+      const nodes: ReactNode[] = [];
+      let lastIndex = 0;
+
+      for (const match of child.matchAll(ID_PATTERN)) {
+        const token = match[0];
+        const index = match.index ?? 0;
+        const targetType = targetTypeFor(token);
+
+        if (!targetType) continue;
+        if (index > lastIndex) nodes.push(child.slice(lastIndex, index));
+        nodes.push(
+          <IdAction
+            key={`${token}-${index}-${nodes.length}`}
+            token={token}
+            targetType={targetType}
+            onAddTask={onAddTask}
+          />,
+        );
+        lastIndex = index + token.length;
+      }
+
+      if (lastIndex === 0) return child;
+      if (lastIndex < child.length) nodes.push(child.slice(lastIndex));
+      return nodes;
+    }
+
+    if (isValidElement<{ children?: ReactNode }>(child) && child.props.children) {
+      return {
+        ...child,
+        props: {
+          ...child.props,
+          children: renderIds(child.props.children, onAddTask),
+        },
+      };
+    }
+
+    return child;
+  });
+}
+
+function MarkdownMessage({
+  text,
+  streaming,
+  onAddTask,
+}: {
+  text: string;
+  streaming?: boolean;
+  onAddTask?: (task: PendingNote & { note: string }) => void;
+}) {
+  const idRenderer = streaming ? undefined : onAddTask;
+
   return (
     <div className="gpt-message-text">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
+          p: ({ children }) => <p>{renderIds(children, idRenderer)}</p>,
+          li: ({ children }) => <li>{renderIds(children, idRenderer)}</li>,
+          h2: ({ children }) => <h2>{renderIds(children, idRenderer)}</h2>,
+          h3: ({ children }) => <h3>{renderIds(children, idRenderer)}</h3>,
+          h4: ({ children }) => <h4>{renderIds(children, idRenderer)}</h4>,
+          strong: ({ children }) => <strong>{renderIds(children, idRenderer)}</strong>,
+          em: ({ children }) => <em>{renderIds(children, idRenderer)}</em>,
+          td: ({ children }) => <td>{renderIds(children, idRenderer)}</td>,
+          th: ({ children }) => <th>{renderIds(children, idRenderer)}</th>,
           table: ({ children }) => (
             <div className="gpt-table-wrap">
               <table className="gpt-markdown-table">{children}</table>
@@ -36,27 +231,18 @@ function MarkdownMessage({ text, streaming }: { text: string; streaming?: boolea
   );
 }
 
-const SUGGESTIONS = [
-  "What is the overall quality of this sequencing run?",
-  "Which genes have low coverage regions?",
-  "Summarize the key QA findings",
-  "What are the recurrent low-coverage regions?",
-  "Are there any coverage warnings I should be aware of?",
-];
-
-function newConversation(): Conversation {
-  return { id: crypto.randomUUID(), title: "New conversation", messages: [] };
-}
-
 export default function ChatPage() {
-  const [conversations, setConversations] = useState<Conversation[]>([newConversation()]);
-  const [activeId, setActiveId] = useState<string>(conversations[0].id);
+  const initialConversation = useRef(newConversation());
+  const [conversations, setConversations] = useState<Conversation[]>([initialConversation.current]);
+  const [activeId, setActiveId] = useState<string>(initialConversation.current.id);
+  const [tasks, setTasks] = useState<TodoTask[]>([]);
+  const tasksHydrated = useRef(false);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const active = conversations.find((c) => c.id === activeId)!;
+  const active = conversations.find((c) => c.id === activeId) ?? conversations[0];
   const messages = active.messages;
 
   useEffect(() => {
@@ -67,16 +253,33 @@ export default function ChatPage() {
     inputRef.current?.focus();
   }, [activeId]);
 
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(TODO_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) setTasks(parsed);
+      }
+    } catch {
+      setTasks([]);
+    } finally {
+      tasksHydrated.current = true;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!tasksHydrated.current) return;
+    window.localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(tasks));
+  }, [tasks]);
+
   function updateMessages(id: string, updater: (msgs: Message[]) => Message[]) {
     setConversations((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, messages: updater(c.messages) } : c))
+      prev.map((c) => (c.id === id ? { ...c, messages: updater(c.messages) } : c)),
     );
   }
 
   function setTitle(id: string, title: string) {
-    setConversations((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, title } : c))
-    );
+    setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
   }
 
   function startNewConversation() {
@@ -99,6 +302,30 @@ export default function ChatPage() {
     });
   }
 
+  function addTask(task: PendingNote & { note: string }) {
+    setTasks((prev) => [
+      {
+        id: crypto.randomUUID(),
+        targetId: task.targetId,
+        targetType: task.targetType,
+        note: task.note,
+        createdAt: new Date().toISOString(),
+        completed: false,
+      },
+      ...prev,
+    ]);
+  }
+
+  function toggleTask(id: string) {
+    setTasks((prev) =>
+      prev.map((task) => (task.id === id ? { ...task, completed: !task.completed } : task)),
+    );
+  }
+
+  function deleteTask(id: string) {
+    setTasks((prev) => prev.filter((task) => task.id !== id));
+  }
+
   async function send(text?: string) {
     const message = (text ?? input).trim();
     if (!message || busy) return;
@@ -116,7 +343,7 @@ export default function ChatPage() {
     ]);
 
     if (isFirst) {
-      setTitle(convId, message.length > 48 ? message.slice(0, 48) + "…" : message);
+      setTitle(convId, message.length > 48 ? message.slice(0, 48) + "..." : message);
     }
 
     try {
@@ -187,10 +414,9 @@ export default function ChatPage() {
 
   return (
     <div className="gpt-shell">
-      {/* Sidebar */}
       <aside className="gpt-sidebar">
         <button className="gpt-new-chat" onClick={startNewConversation}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
           New conversation
@@ -203,16 +429,19 @@ export default function ChatPage() {
               className={`gpt-history-item ${c.id === activeId ? "active" : ""}`}
               onClick={() => setActiveId(c.id)}
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="gpt-history-icon">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="gpt-history-icon" aria-hidden="true">
                 <path d="M2 2a1 1 0 011-1h8a1 1 0 011 1v7a1 1 0 01-1 1H5L2 13V2z" fill="currentColor" opacity=".7" />
               </svg>
               <span className="gpt-history-title">{c.title}</span>
               <button
                 className="gpt-history-delete"
                 aria-label="Delete"
-                onClick={(e) => { e.stopPropagation(); deleteConversation(c.id); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteConversation(c.id);
+                }}
               >
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                   <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
                 </svg>
               </button>
@@ -226,12 +455,11 @@ export default function ChatPage() {
         </div>
       </aside>
 
-      {/* Main */}
       <div className="gpt-main">
         {messages.length === 0 ? (
           <div className="gpt-welcome">
             <div className="gpt-welcome-icon">
-              <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+              <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
                 <circle cx="18" cy="18" r="18" fill="#3f60db" opacity=".12" />
                 <path d="M8 14a3 3 0 013-3h14a3 3 0 013 3v8a3 3 0 01-3 3H13l-5 5V14z" fill="#3f60db" />
               </svg>
@@ -256,16 +484,18 @@ export default function ChatPage() {
                   {msg.role === "user" ? (
                     <span className="gpt-avatar-user">H4</span>
                   ) : (
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
                       <path d="M3 5a2 2 0 012-2h8a2 2 0 012 2v6a2 2 0 01-2 2H6l-3 3V5z" fill="white" />
                     </svg>
                   )}
                 </div>
                 <div className="gpt-message">
-                  <span className="gpt-message-role">
-                    {msg.role === "user" ? "You" : "Assistant"}
-                  </span>
-                  <MarkdownMessage text={msg.text} streaming={msg.streaming} />
+                  <span className="gpt-message-role">{msg.role === "user" ? "You" : "Assistant"}</span>
+                  <MarkdownMessage
+                    text={msg.text}
+                    streaming={msg.streaming}
+                    onAddTask={msg.role === "assistant" ? addTask : undefined}
+                  />
                 </div>
               </div>
             ))}
@@ -273,13 +503,12 @@ export default function ChatPage() {
           </div>
         )}
 
-        {/* Input */}
         <div className="gpt-input-wrap">
           <div className="gpt-input-box">
             <textarea
               ref={inputRef}
               className="gpt-input"
-              placeholder="Message Clinical AI Assistant…"
+              placeholder="Message Clinical AI Assistant..."
               rows={1}
               value={input}
               onChange={autoResize}
@@ -292,14 +521,60 @@ export default function ChatPage() {
               onClick={() => send()}
               disabled={!input.trim() || busy}
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path d="M1 8l13-6-6 13V8H1z" fill="currentColor" />
               </svg>
             </button>
           </div>
-          <p className="gpt-input-hint">Press Enter to send · Shift+Enter for new line</p>
+          <p className="gpt-input-hint">Press Enter to send - Shift+Enter for new line</p>
         </div>
       </div>
+
+      <aside className="gpt-todo-panel" aria-label="To-do task list">
+        <div className="gpt-todo-header">
+          <span>To-do</span>
+          <b>{tasks.length}</b>
+        </div>
+        {tasks.length === 0 ? (
+          <p className="gpt-todo-empty">Add notes from sample or gene IDs in assistant answers.</p>
+        ) : (
+          <div className="gpt-todo-list">
+            {tasks.map((task) => (
+              <article className={`gpt-todo-item ${task.completed ? "completed" : ""}`} key={task.id}>
+                <button
+                  className="gpt-todo-check"
+                  type="button"
+                  aria-label={task.completed ? "Mark task incomplete" : "Mark task complete"}
+                  onClick={() => toggleTask(task.id)}
+                >
+                  {task.completed ? (
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                      <path d="M2 6.2l2.3 2.3L10 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  ) : null}
+                </button>
+                <div className="gpt-todo-body">
+                  <div className="gpt-todo-meta">
+                    <span className={task.targetType}>{task.targetId}</span>
+                    <small>{task.targetType}</small>
+                  </div>
+                  <p>{task.note}</p>
+                </div>
+                <button
+                  className="gpt-todo-delete"
+                  type="button"
+                  aria-label={`Delete task for ${task.targetId}`}
+                  onClick={() => deleteTask(task.id)}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </article>
+            ))}
+          </div>
+        )}
+      </aside>
     </div>
   );
 }
