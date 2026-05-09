@@ -15,7 +15,7 @@ def _client() -> ElevenLabs:
 
 
 def _voice_id(speaker: str) -> str:
-    if speaker.lower() == "alex":
+    if speaker.lower() == "asher":
         return os.getenv("ELEVENLABS_VOICE_ASHER", "")
     return os.getenv("ELEVENLABS_VOICE_JAMES", "")
 

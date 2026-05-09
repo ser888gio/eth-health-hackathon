@@ -1,11 +1,15 @@
 import json
 import os
+import tempfile
 
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
 load_dotenv()
+
+import logging
+logger = logging.getLogger(__name__)
 
 MODEL = "gemini-3-flash-preview"
 
@@ -86,7 +90,16 @@ def summarize(report: dict, audience: str = "lab") -> dict:
     )
 
     raw = _strip_fences(response.text)
-    return json.loads(raw)
+    result = json.loads(raw)
+
+    tmp = tempfile.NamedTemporaryFile(
+        mode="w", suffix=".json", prefix="summary_", delete=False, encoding="utf-8"
+    )
+    json.dump(result, tmp, indent=2)
+    tmp.close()
+    logger.info("Summary saved to %s", tmp.name)
+
+    return result
 
 
 def _count_affected(report: dict) -> int:

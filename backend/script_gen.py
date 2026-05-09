@@ -12,12 +12,12 @@ MODEL = "gemini-3-flash-preview"
 SCRIPT_SYSTEM = {
     "lab": (
         "Write for an audience of lab scientists and bioinformaticians. "
-        "Use precise technical language freely. Sam leads the technical discussion; "
-        "Alex asks sharp, clinically-oriented follow-up questions."
+        "Use precise technical language freely. James leads the technical discussion; "
+        "Asher asks sharp, clinically-oriented follow-up questions."
     ),
     "clinical": (
         "Write for clinicians (oncologists, rare disease specialists). "
-        "Explain genomics terms briefly on first use. Alex leads, framing everything "
+        "Explain genomics terms briefly on first use. Asher leads, framing everything "
         "as patient impact and diagnostic confidence."
     ),
     "general": (
@@ -29,22 +29,22 @@ SCRIPT_SYSTEM = {
 
 SCRIPT_USER_TEMPLATE = """\
 Write a conversational podcast script (~600 words, ~90 seconds spoken) between two hosts:
-- Alex (clinician): patient/clinical impact angle
-- Sam (bioinformatician): technical explanation angle
+- Asher (clinician): patient/clinical impact angle
+- James (bioinformatician): technical explanation angle
 
 Use this quality report summary:
 {summary_json}
 
 Script structure (stick to this order):
-1. Hook (10s): Alex opens with "Something interesting came out of this week's sequencing run..."
-2. Headline (20s): Sam explains the MSH2 panel design finding and Lynch syndrome implications
-3. Deep dive (30s): Alex asks about the outlier sample; Sam explains what went wrong technically
-4. So what? (20s): Alex asks what the lab should do; Sam gives 1-2 concrete next steps
+1. Hook (10s): Asher opens with "Something interesting came out of this week's sequencing run..."
+2. Headline (20s): James explains the MSH2 panel design finding and Lynch syndrome implications
+3. Deep dive (30s): Asher asks about the outlier sample; James explains what went wrong technically
+4. So what? (20s): Asher asks what the lab should do; James gives 1-2 concrete next steps
 5. Close (10s): natural wrap-up, "see you next run"
 
 Rules:
 - Output ONLY valid JSON, no prose before or after
-- Format: [{{"speaker": "Alex", "line": "..."}}, {{"speaker": "Sam", "line": "..."}}, ...]
+- Format: [{{"speaker": "Asher", "line": "..."}}, {{"speaker": "James", "line": "..."}}, ...]
 - No stage directions, no [brackets], no (parenthetical notes)
 - Each line is one spoken turn — keep turns under 40 words
 - Do not repeat the same information twice"""
@@ -66,29 +66,45 @@ def _strip_fences(raw: str) -> str:
     return raw.strip()
 
 
-def generate_script(summary: dict, audience: str = "lab") -> list[dict]:
+def generate_script(summary: dict, audience: str = "lab", max_retries: int = 3) -> list[dict]:
     if audience not in SCRIPT_SYSTEM:
         raise ValueError(f"audience must be one of {list(SCRIPT_SYSTEM)}")
 
     user_prompt = SCRIPT_USER_TEMPLATE.format(summary_json=json.dumps(summary, indent=2))
-
     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=user_prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=SCRIPT_SYSTEM[audience],
-            max_output_tokens=3000,
-            temperature=0.7,
-        ),
-    )
+    last_error: Exception | None = None
 
-    text = response.text or ""
-    if not text.strip():
-        raise RuntimeError(f"Empty response from model. Finish reason: {response.candidates[0].finish_reason if response.candidates else 'unknown'}")
+    for attempt in range(max_retries):
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=user_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=SCRIPT_SYSTEM[audience],
+                max_output_tokens=3000,
+                temperature=0.3,
+            ),
+        )
 
-    raw = _strip_fences(text)
-    return json.loads(raw)
+        text = response.text or ""
+        if not text.strip():
+            last_error = RuntimeError(
+                f"Empty response from model (attempt {attempt+1}). "
+                f"Finish reason: {response.candidates[0].finish_reason if response.candidates else 'unknown'}"
+            )
+            continue
+
+        try:
+            raw = _strip_fences(text)
+            parsed = json.loads(raw)
+            if isinstance(parsed, list) and parsed and isinstance(parsed[0], dict):
+                return parsed
+            last_error = ValueError(
+                f"Model returned unexpected JSON structure (attempt {attempt+1}): {raw[:300]}"
+            )
+        except json.JSONDecodeError as e:
+            last_error = e
+
+    raise RuntimeError(f"Failed to get valid script after {max_retries} attempts") from last_error
 
 
 if __name__ == "__main__":
