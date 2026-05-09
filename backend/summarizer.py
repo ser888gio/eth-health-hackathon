@@ -5,10 +5,10 @@ import tempfile
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+import logging
 
 load_dotenv()
 
-import logging
 logger = logging.getLogger(__name__)
 
 MODEL = "gemini-3-flash-preview"
