@@ -38,7 +38,10 @@ def _gemini_embed(chunks: list[str]) -> list[list[float]]:
     from google import genai
     from google.genai import types
 
-    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    client = genai.Client(
+        api_key=os.environ["GEMINI_API_KEY"],
+        http_options={"api_version": "v1"},
+    )
     result = client.models.embed_content(
         model="text-embedding-004",
         contents=chunks,
