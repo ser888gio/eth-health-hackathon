@@ -73,10 +73,74 @@ const SUGGESTIONS = [
   "Compare samples SG063-LPA, SG220-LPA, and 17br088-1-Run1.",
   "What is the overall quality of this sequencing run?",
   "Which genes have low coverage regions?",
-  "Summarize the key QA findings",
-  "What are the recurrent low-coverage regions?",
   "Are there any coverage warnings I should be aware of?",
 ];
+
+function textFromReactNode(children: ReactNode): string {
+  const parts: string[] = [];
+
+  Children.forEach(children, (child) => {
+    if (typeof child === "string" || typeof child === "number") {
+      parts.push(String(child));
+      return;
+    }
+
+    if (isValidElement<{ children?: ReactNode }>(child)) {
+      parts.push(textFromReactNode(child.props.children));
+    }
+  });
+
+  return parts.join("");
+}
+
+function normalizeActionText(value: string) {
+  return value
+    .replace(/\s*\[\d+(?:]\[\d+)*]\s*/g, " ")
+    .replace(/^(TODO|Action|Follow-up)\s*:\s*/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function markdownSectionTitle(line: string): string | null {
+  const hashHeading = line.match(/^#{1,6}\s+(.+?)\s*#*\s*$/);
+  if (hashHeading) return hashHeading[1].trim().replace(/:$/, "");
+
+  const trimmed = line.trim();
+  const boldHeading = trimmed.match(/^\*\*(.+?)\*\*:?\s*$/);
+  if (boldHeading) return boldHeading[1].trim().replace(/:$/, "");
+
+  const plainHeading = trimmed.match(/^([A-Z][A-Za-z -]+):\s*$/);
+  return plainHeading ? plainHeading[1].trim() : null;
+}
+
+function extractRecommendedActions(markdown: string): Set<string> {
+  const actions = new Set<string>();
+  const lines = markdown.split(/\r?\n/);
+  let inSection = false;
+
+  for (const line of lines) {
+    const bullet = line.match(/^\s*[-*+]\s+(.+)$/) || line.match(/^\s*\d+[.)]\s+(.+)$/);
+    if (inSection && bullet) {
+      const action = normalizeActionText(bullet[1]);
+      if (action) actions.add(action);
+      continue;
+    }
+
+    const heading = markdownSectionTitle(line);
+    if (heading) {
+      inSection = /recommended\s+follow[- ]?up\s+actions/i.test(heading);
+    }
+  }
+
+  return actions;
+}
+
+function inferSampleId(text: string): string | null {
+  for (const sampleId of SAMPLE_IDS) {
+    if (text.toLowerCase().includes(sampleId.toLowerCase())) return sampleId;
+  }
+  return null;
+}
 
 function newConversation(): Conversation {
   return { id: crypto.randomUUID(), title: "New conversation", messages: [] };
@@ -244,6 +308,8 @@ function MarkdownMessage({
   onAddTask?: (task: PendingNote & { note: string; severity: number }) => void;
 }) {
   const idRenderer = streaming ? undefined : onAddTask;
+  const recommendedActions = !streaming && onAddTask ? extractRecommendedActions(text) : new Set<string>();
+  const inferredSampleId = inferSampleId(text);
 
   return (
     <div className="gpt-message-text">
@@ -251,7 +317,34 @@ function MarkdownMessage({
         remarkPlugins={[remarkGfm]}
         components={{
           p: ({ children }) => <p>{renderIds(children, idRenderer)}</p>,
-          li: ({ children }) => <li>{renderIds(children, idRenderer)}</li>,
+          li: ({ children }) => {
+            const note = normalizeActionText(textFromReactNode(children));
+            const followUpSampleId = idRenderer && inferredSampleId && recommendedActions.has(note) ? inferredSampleId : null;
+
+            return (
+              <li className={followUpSampleId ? "gpt-follow-up-action" : undefined}>
+                {followUpSampleId ? (
+                  <button
+                    className="gpt-follow-up-plus"
+                    type="button"
+                    aria-label={`Add follow-up task for ${followUpSampleId}`}
+                    title="Add as task"
+                    onClick={() =>
+                      onAddTask?.({
+                        targetId: followUpSampleId,
+                        targetType: "sample",
+                        note,
+                        severity: DEFAULT_SEVERITY,
+                      })
+                    }
+                  >
+                    +
+                  </button>
+                ) : null}
+                <span>{renderIds(children, idRenderer)}</span>
+              </li>
+            );
+          },
           h2: ({ children }) => <h2>{renderIds(children, idRenderer)}</h2>,
           h3: ({ children }) => <h3>{renderIds(children, idRenderer)}</h3>,
           h4: ({ children }) => <h4>{renderIds(children, idRenderer)}</h4>,
@@ -377,18 +470,62 @@ export default function ChatPage() {
   }
 
   function addTask(task: PendingNote & { note: string; severity: number }) {
-    setTasks((prev) => [
-      {
-        id: crypto.randomUUID(),
-        targetId: task.targetId,
-        targetType: task.targetType,
-        note: task.note,
-        severity: normalizeSeverity(task.severity),
-        createdAt: new Date().toISOString(),
-        completed: false,
-      },
-      ...prev,
-    ]);
+    setTasks((prev) => {
+      const normalizedNote = normalizeActionText(task.note);
+      if (!normalizedNote) return prev;
+      const isDuplicate = prev.some(
+        (existing) =>
+          existing.targetId === task.targetId &&
+          existing.targetType === task.targetType &&
+          normalizeActionText(existing.note).toLowerCase() === normalizedNote.toLowerCase(),
+      );
+      if (isDuplicate) return prev;
+
+      return [
+        {
+          id: crypto.randomUUID(),
+          targetId: task.targetId,
+          targetType: task.targetType,
+          note: normalizedNote,
+          severity: normalizeSeverity(task.severity),
+          createdAt: new Date().toISOString(),
+          completed: false,
+        },
+        ...prev,
+      ];
+    });
+  }
+
+  function addRecommendedActionTasks(sampleId: string, markdown: string) {
+    const actions = Array.from(extractRecommendedActions(markdown));
+    if (actions.length === 0) return;
+
+    setTasks((prev) => {
+      const existingKeys = new Set(
+        prev.map((task) =>
+          [task.targetType, task.targetId, normalizeActionText(task.note).toLowerCase()].join("|"),
+        ),
+      );
+      const createdAt = new Date().toISOString();
+      const newTasks = actions
+        .map((note) => ({
+          id: crypto.randomUUID(),
+          targetId: sampleId,
+          targetType: "sample" as const,
+          note,
+          severity: DEFAULT_SEVERITY,
+          createdAt,
+          completed: false,
+        }))
+        .filter((task) => {
+          const key = [task.targetType, task.targetId, normalizeActionText(task.note).toLowerCase()].join("|");
+          if (existingKeys.has(key)) return false;
+          existingKeys.add(key);
+          return true;
+        });
+
+      return newTasks.length > 0 ? [...newTasks, ...prev] : prev;
+    });
   }
 
   function toggleTask(id: string) {
@@ -571,6 +708,11 @@ export default function ChatPage() {
         next[next.length - 1] = { role: "assistant", text: accumulated };
         return next;
       });
+
+      if (options.intent === "qa-summary") {
+        const summarySampleId = options.sampleId || inferSampleId(accumulated);
+        if (summarySampleId) addRecommendedActionTasks(summarySampleId, accumulated);
+      }
     } catch (err) {
       updateMessages(convId, (msgs) => {
         const next = [...msgs];

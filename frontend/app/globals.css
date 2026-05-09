@@ -686,7 +686,15 @@ a {
   display: grid;
   gap: 5px;
   margin: 0;
-  padding-left: 19px;
+  padding-left: 0;
+  list-style: none;
+}
+
+.smart-summary-body li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
 }
 
 .smart-summary-body p {
@@ -703,6 +711,38 @@ a {
 
 .smart-summary-error {
   color: #a61b35;
+}
+
+.smart-task-plus {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+  border-radius: 999px;
+  border: 1px solid #bcc7e8;
+  background: #fff;
+  color: var(--blue);
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.smart-task-plus:hover:not(:disabled) {
+  border-color: var(--blue);
+  box-shadow: 0 1px 5px rgba(63,96,219,0.2);
+}
+
+.smart-task-plus:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.smart-task-status {
+  margin-top: 8px;
+  color: #087b5a;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .viewer-shell {
@@ -1613,6 +1653,35 @@ a {
 
 .gpt-message-text li {
   margin: 3px 0;
+}
+
+.gpt-message-text li.gpt-follow-up-action {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  list-style: none;
+  margin-left: -20px;
+}
+
+.gpt-follow-up-plus {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  margin-top: 3px;
+  border-radius: 999px;
+  border: 1px solid #bcc7e8;
+  background: #fff;
+  color: var(--blue);
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.gpt-follow-up-plus:hover {
+  border-color: var(--blue);
+  box-shadow: 0 1px 5px rgba(63,96,219,0.2);
 }
 
 .gpt-message-text hr {

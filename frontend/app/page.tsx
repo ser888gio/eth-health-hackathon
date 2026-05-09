@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Children, isValidElement, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import ChatPage from "./Chatbot";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -17,6 +17,18 @@ const skinnyTabs = [
 ];
 
 const fallbackSampleIds = ["SG063-LPA", "SG220-LPA", "SG222-LPA", "17br088-1-Run1"];
+const TODO_STORAGE_KEY = "clinical-chat-tasks-v1";
+const DEFAULT_TASK_SEVERITY = 3;
+
+type TodoTask = {
+  id: string;
+  targetId: string;
+  targetType: "sample" | "gene";
+  note: string;
+  severity: number;
+  createdAt: string;
+  completed: boolean;
+};
 
 type Finding = {
   title: string;
@@ -51,6 +63,9 @@ export default function Home() {
   const [smartSummary, setSmartSummary] = useState("");
   const [smartStatus, setSmartStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [smartError, setSmartError] = useState("");
+  const [tasks, setTasks] = useState<TodoTask[]>([]);
+  const [taskStatus, setTaskStatus] = useState("");
+  const tasksHydrated = useRef(false);
 
   const reportSrc = useMemo(
     () => `/api/report#toolbar=0&navpanes=0&pagemode=none&scrollbar=1&page=${page}&zoom=${zoom}`,
@@ -122,6 +137,25 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSampleId, isChat]);
 
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(TODO_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) setTasks(parsed.map(normalizeTask).filter(Boolean) as TodoTask[]);
+      }
+    } catch {
+      setTasks([]);
+    } finally {
+      tasksHydrated.current = true;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!tasksHydrated.current) return;
+    window.localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(tasks));
+  }, [tasks]);
+
   const regenerateQaReport = () => {
     setQaStatus("loading");
     setQaError("");
@@ -184,6 +218,26 @@ export default function Home() {
       setSmartError(error instanceof Error ? error.message : "Unable to generate Smart Case Summary");
       setSmartStatus("error");
     }
+  }
+
+  function addSmartSummaryTask(note: string) {
+    const cleaned = cleanTaskNote(note);
+    if (!cleaned) return;
+
+    setTasks((previous) => [
+      {
+        id: crypto.randomUUID(),
+        targetId: selectedSampleId,
+        targetType: "sample",
+        note: cleaned,
+        severity: DEFAULT_TASK_SEVERITY,
+        createdAt: new Date().toISOString(),
+        completed: false,
+      },
+      ...previous,
+    ]);
+    setTaskStatus(`Added task for ${selectedSampleId}.`);
+    window.setTimeout(() => setTaskStatus(""), 2200);
   }
 
   return (
@@ -346,6 +400,8 @@ export default function Home() {
               error={smartError}
               onSampleChange={setSelectedSampleId}
               onRegenerate={() => generateSmartSummary(selectedSampleId)}
+              onAddTask={addSmartSummaryTask}
+              taskStatus={taskStatus}
             />
 
             <section className="viewer-shell">
@@ -375,6 +431,45 @@ export default function Home() {
   );
 }
 
+function normalizeTask(task: Partial<TodoTask>): TodoTask | null {
+  if (!task.id || !task.targetId || !task.targetType || !task.note || !task.createdAt) return null;
+  if (task.targetType !== "sample" && task.targetType !== "gene") return null;
+
+  return {
+    id: String(task.id),
+    targetId: String(task.targetId),
+    targetType: task.targetType,
+    note: String(task.note),
+    severity: Number.isFinite(Number(task.severity)) ? Math.min(5, Math.max(1, Math.round(Number(task.severity)))) : DEFAULT_TASK_SEVERITY,
+    createdAt: String(task.createdAt),
+    completed: Boolean(task.completed),
+  };
+}
+
+function textFromReactNode(children: ReactNode): string {
+  const parts: string[] = [];
+
+  Children.forEach(children, (child) => {
+    if (typeof child === "string" || typeof child === "number") {
+      parts.push(String(child));
+      return;
+    }
+
+    if (isValidElement<{ children?: ReactNode }>(child)) {
+      parts.push(textFromReactNode(child.props.children));
+    }
+  });
+
+  return parts.join("");
+}
+
+function cleanTaskNote(note: string) {
+  return note
+    .replace(/\s*\[\d+(?:]\[\d+)*]\s*/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function SmartCaseSummary({
   sampleIds,
   selectedSampleId,
@@ -383,6 +478,8 @@ function SmartCaseSummary({
   error,
   onSampleChange,
   onRegenerate,
+  onAddTask,
+  taskStatus,
 }: {
   sampleIds: string[];
   selectedSampleId: string;
@@ -391,6 +488,8 @@ function SmartCaseSummary({
   error: string;
   onSampleChange: (sampleId: string) => void;
   onRegenerate: () => void;
+  onAddTask: (note: string) => void;
+  taskStatus: string;
 }) {
   return (
     <section className="smart-summary" aria-label="Smart Case Summary">
@@ -422,10 +521,35 @@ function SmartCaseSummary({
         {status === "loading" ? <p className="smart-summary-muted">Generating fast triage bullets...</p> : null}
         {status === "error" ? <p className="smart-summary-error">{error}</p> : null}
         {summary ? (
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{summary}</ReactMarkdown>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              li: ({ children }) => {
+                const note = cleanTaskNote(textFromReactNode(children));
+                return (
+                  <li>
+                    <button
+                      className="smart-task-plus"
+                      type="button"
+                      aria-label={`Add follow-up task for ${selectedSampleId}`}
+                      title="Add as task"
+                      disabled={!note}
+                      onClick={() => onAddTask(note)}
+                    >
+                      +
+                    </button>
+                    <span>{children}</span>
+                  </li>
+                );
+              },
+            }}
+          >
+            {summary}
+          </ReactMarkdown>
         ) : status === "idle" ? (
           <p className="smart-summary-muted">Select a sample to generate a 4-5 bullet triage overview.</p>
         ) : null}
+        {taskStatus ? <p className="smart-task-status">{taskStatus}</p> : null}
       </div>
     </section>
   );
