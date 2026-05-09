@@ -13,6 +13,7 @@ Usage:
 import os
 import sys
 import psycopg2
+from psycopg2.extras import Json
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -102,11 +103,20 @@ def source_already_ingested(cur, source: str) -> bool:
     return cur.fetchone() is not None
 
 
+def ensure_citation_columns(cur, conn) -> None:
+    cur.execute("ALTER TABLE documents ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb")
+    cur.execute("ALTER TABLE documents ADD COLUMN IF NOT EXISTS chunk_index INTEGER")
+    conn.commit()
+
+
 def insert_chunks(cur, source: str, chunks: list[str], embeddings: list[list[float]]) -> int:
-    for chunk, emb in zip(chunks, embeddings):
+    for chunk_index, (chunk, emb) in enumerate(zip(chunks, embeddings)):
         cur.execute(
-            "INSERT INTO documents (source, content, embedding) VALUES (%s, %s, %s)",
-            (source, chunk, emb),
+            """
+            INSERT INTO documents (source, content, metadata, chunk_index, embedding)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (source, chunk, Json({"source_file": source, "chunk_index": chunk_index}), chunk_index, emb),
         )
     return len(chunks)
 
@@ -158,6 +168,8 @@ def main():
 
     print(f"Connecting to postgres at {DB_CONFIG['host']}:{DB_CONFIG['port']} …")
     conn = connect()
+    with conn.cursor() as cur:
+        ensure_citation_columns(cur, conn)
 
     total = 0
     for path in paths:

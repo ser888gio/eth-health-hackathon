@@ -8,9 +8,11 @@ Usage:
 """
 
 import argparse
+import json
 import os
 import sys
 import psycopg2
+from psycopg2.extras import Json
 import pandas as pd
 from pathlib import Path
 from dotenv import load_dotenv
@@ -24,6 +26,65 @@ DB_CONFIG = {
     "user": os.getenv("POSTGRES_USER", "postgres"),
     "password": os.getenv("POSTGRES_PASSWORD", "postgres"),
 }
+
+METADATA_COLUMNS = (
+    "source_file",
+    "page",
+    "page_number",
+    "table",
+    "table_name",
+    "sample_id",
+    "patient_id",
+    "report_type",
+    "chunk_index",
+    "chunk_id",
+    "external_id",
+)
+
+
+def ensure_citation_columns(cur, conn) -> None:
+    cur.execute("ALTER TABLE documents ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb")
+    cur.execute("ALTER TABLE documents ADD COLUMN IF NOT EXISTS chunk_index INTEGER")
+    conn.commit()
+
+
+def clean_value(value):
+    if isinstance(value, dict):
+        return {str(k): clean_value(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [clean_value(v) for v in value]
+    if hasattr(value, "tolist"):
+        return clean_value(value.tolist())
+    if pd.isna(value):
+        return None
+    return value.item() if hasattr(value, "item") else value
+
+
+def build_metadata(row) -> dict:
+    raw_metadata = row.get("metadata", {})
+    if isinstance(raw_metadata, str):
+        try:
+            raw_metadata = json.loads(raw_metadata)
+        except json.JSONDecodeError:
+            raw_metadata = {}
+    metadata = raw_metadata if isinstance(raw_metadata, dict) else {}
+    metadata = clean_value(dict(metadata))
+    for column in METADATA_COLUMNS:
+        if column in row.index:
+            value = clean_value(row[column])
+            if value is not None:
+                metadata.setdefault(column, value)
+    return metadata
+
+
+def get_chunk_index(row, fallback: int) -> int:
+    if "chunk_index" not in row.index:
+        return fallback
+    value = clean_value(row["chunk_index"])
+    try:
+        return int(value) if value is not None else fallback
+    except (TypeError, ValueError):
+        return fallback
 
 
 def source_already_ingested(cur, source: str) -> bool:
@@ -51,8 +112,20 @@ def load_parquet(parquet_path: Path, cur, conn, source_col: str = "source") -> t
         subset = df[df["source"] == source]
         print(f"  inserting {len(subset)} chunks for {source} …", end="", flush=True)
         cur.executemany(
-            "INSERT INTO documents (source, content, embedding) VALUES (%s, %s, %s)",
-            [(row["source"], row["content"], [float(x) for x in row["embedding"]]) for _, row in subset.iterrows()],
+            """
+            INSERT INTO documents (source, content, metadata, chunk_index, embedding)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            [
+                (
+                    row["source"],
+                    row["content"],
+                    Json(build_metadata(row)),
+                    get_chunk_index(row, i),
+                    [float(x) for x in row["embedding"]],
+                )
+                for i, (_, row) in enumerate(subset.iterrows())
+            ],
         )
         conn.commit()
         inserted += len(subset)
@@ -88,6 +161,7 @@ def main():
     print(f"Found {len(paths)} parquet file(s)")
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
+    ensure_citation_columns(cur, conn)
 
     total_inserted = total_skipped = 0
     for path in paths:

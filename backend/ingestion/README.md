@@ -45,14 +45,18 @@ documents (
     id SERIAL PRIMARY KEY,
     source TEXT,
     content TEXT NOT NULL,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    chunk_index INTEGER,
     embedding vector(768)
 )
 ```
 
-CSV, PDF, and TXT ingestion should all produce 768-dimensional embeddings and insert rows using:
+CSV, PDF, and TXT ingestion should all produce 768-dimensional embeddings and preserve citation metadata when available. Put fields such as `source_file`, `page`, `table`, `sample_id`, `patient_id`, and `report_type` in `metadata`, and store the per-source chunk number in `chunk_index`.
+
+Insert rows using:
 
 ```sql
-INSERT INTO documents (source, content, embedding) VALUES (...)
+INSERT INTO documents (source, content, metadata, chunk_index, embedding) VALUES (...)
 ```
 
 The current scripts skip a source if any row with the same `source` already exists. Keep that duplicate-source behavior consistent across new pipelines so repeated test runs are predictable.

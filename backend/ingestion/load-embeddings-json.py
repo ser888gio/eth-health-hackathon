@@ -14,6 +14,7 @@ import json
 import os
 import sys
 import psycopg2
+from psycopg2.extras import Json
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -26,6 +27,44 @@ DB_CONFIG = {
     "user": os.getenv("POSTGRES_USER", "postgres"),
     "password": os.getenv("POSTGRES_PASSWORD", "postgres"),
 }
+
+METADATA_FIELDS = (
+    "source_file",
+    "page",
+    "page_number",
+    "table",
+    "table_name",
+    "sample_id",
+    "patient_id",
+    "report_type",
+    "chunk_index",
+    "chunk_id",
+    "external_id",
+)
+
+
+def ensure_citation_columns(cur, conn) -> None:
+    cur.execute("ALTER TABLE documents ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb")
+    cur.execute("ALTER TABLE documents ADD COLUMN IF NOT EXISTS chunk_index INTEGER")
+    conn.commit()
+
+
+def build_metadata(record: dict) -> dict:
+    metadata = dict(record.get("metadata") or {})
+    for field in METADATA_FIELDS:
+        if field in record and record[field] is not None:
+            metadata.setdefault(field, record[field])
+    return metadata
+
+
+def get_chunk_index(record: dict, fallback: int) -> int:
+    value = record.get("chunk_index")
+    if value is None and isinstance(record.get("metadata"), dict):
+        value = record["metadata"].get("chunk_index")
+    try:
+        return int(value) if value is not None else fallback
+    except (TypeError, ValueError):
+        return fallback
 
 
 def source_already_ingested(cur, source: str) -> bool:
@@ -62,8 +101,20 @@ def load_json(json_path: Path, cur, conn) -> tuple[int, int]:
         subset = [r for r in records if r["source_file"] == source]
         print(f"  inserting {len(subset)} chunks for {source} …", end="", flush=True)
         cur.executemany(
-            "INSERT INTO documents (source, content, embedding) VALUES (%s, %s, %s)",
-            [(r["source_file"], r["text"], [float(x) for x in r["embedding"]]) for r in subset],
+            """
+            INSERT INTO documents (source, content, metadata, chunk_index, embedding)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            [
+                (
+                    r["source_file"],
+                    r["text"],
+                    Json(build_metadata(r)),
+                    get_chunk_index(r, i),
+                    [float(x) for x in r["embedding"]],
+                )
+                for i, r in enumerate(subset)
+            ],
         )
         conn.commit()
         inserted += len(subset)
@@ -98,6 +149,7 @@ def main():
     print(f"Found {len(paths)} JSON file(s)")
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
+    ensure_citation_columns(cur, conn)
 
     total_inserted = total_skipped = 0
     for path in paths:

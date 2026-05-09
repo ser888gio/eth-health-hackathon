@@ -1,0 +1,23 @@
+# Drop the database
+docker compose down -v
+
+#Start again
+docker compose up -d db
+
+#Upload the embeddings from csv-data
+uv run python load-embeddings.py csv-data/embeddings.parquet --source-col source_file
+
+#Upload the embeddings from txt-parquets
+uv run python load-embeddings.py txt-parquets/
+
+#Upload the embeddings from pdfs
+uv run python load-embeddings-json.py pdf-files/pdf/chunks_embedded.json
+
+
+#Full command
+docker compose down -v
+docker compose up -d db
+cd backend/ingestion
+uv run python load-embeddings.py csv-data/embeddings.parquet --source-col source_file
+uv run python load-embeddings.py txt-parquets/
+uv run python load-embeddings-json.py pdf-files/pdf/chunks_embedded.json

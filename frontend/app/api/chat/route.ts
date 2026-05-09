@@ -12,6 +12,17 @@ const DB_CONFIG = {
 
 const TOP_K = 5;
 
+type CitationMetadata = Record<string, unknown>;
+
+type RetrievedChunk = {
+  id: number;
+  source: string | null;
+  content: string;
+  metadata: CitationMetadata;
+  chunkIndex: number | null;
+  rank: number;
+};
+
 function getAI() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
@@ -30,34 +41,100 @@ async function embedQuery(query: string): Promise<number[]> {
   return data.embedding;
 }
 
-async function retrieveContext(embedding: number[]): Promise<string[]> {
+function cleanMetadata(metadata: unknown): CitationMetadata {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return {};
+  return metadata as CitationMetadata;
+}
+
+function metadataString(metadata: CitationMetadata, key: string): string | null {
+  const value = metadata[key];
+  if (value === null || value === undefined || value === "") return null;
+  return String(value);
+}
+
+function sourceLabel(chunk: RetrievedChunk): string {
+  const metadata = chunk.metadata;
+  const source = metadataString(metadata, "source_file") || chunk.source || `document ${chunk.id}`;
+  const page = metadataString(metadata, "page") || metadataString(metadata, "page_number");
+  const table = metadataString(metadata, "table") || metadataString(metadata, "table_name");
+  const sample = metadataString(metadata, "sample_id");
+  const patient = metadataString(metadata, "patient_id");
+  const report = metadataString(metadata, "report_type");
+  const chunkIndex = chunk.chunkIndex ?? metadataString(metadata, "chunk_index") ?? chunk.rank - 1;
+
+  const details = [
+    page ? `page ${page}` : null,
+    sample ? `sample ${sample}` : null,
+    patient ? `patient ${patient}` : null,
+    table ? `table ${table}` : null,
+    report ? `report ${report}` : null,
+    `chunk ${chunkIndex}`,
+  ].filter(Boolean);
+
+  return `${source}${details.length ? `, ${details.join(", ")}` : ""}`;
+}
+
+function formatContext(chunks: RetrievedChunk[]): string {
+  return chunks
+    .map((chunk) => `[${chunk.rank}] Citation: ${sourceLabel(chunk)}\nContent:\n${chunk.content}`)
+    .join("\n\n");
+}
+
+async function ensureCitationColumns(client: Client): Promise<void> {
+  await client.query("ALTER TABLE documents ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb");
+  await client.query("ALTER TABLE documents ADD COLUMN IF NOT EXISTS chunk_index INTEGER");
+}
+
+async function retrieveContext(embedding: number[]): Promise<RetrievedChunk[]> {
   const client = new Client(DB_CONFIG);
   await client.connect();
   try {
+    await ensureCitationColumns(client);
     const vectorLiteral = `[${embedding.join(",")}]`;
     const res = await client.query(
-      `SELECT content
+      `SELECT id, source, content, metadata, chunk_index
        FROM documents
        ORDER BY embedding <=> $1::vector
        LIMIT $2`,
       [vectorLiteral, TOP_K]
     );
-    return res.rows.map((r: { content: string }) => r.content);
+    return res.rows.map(
+      (
+        r: {
+          id: number;
+          source: string | null;
+          content: string;
+          metadata: unknown;
+          chunk_index: number | null;
+        },
+        i: number
+      ) => ({
+        id: r.id,
+        source: r.source,
+        content: r.content,
+        metadata: cleanMetadata(r.metadata),
+        chunkIndex: r.chunk_index,
+        rank: i + 1,
+      })
+    );
   } finally {
     await client.end();
   }
 }
 
-async function generateAnswer(question: string, chunks: string[]): Promise<ReadableStream<Uint8Array>> {
+async function generateAnswer(question: string, chunks: RetrievedChunk[]): Promise<ReadableStream<Uint8Array>> {
   const anthropic = getAI();
 
-  const context = chunks
-    .map((c, i) => `[${i + 1}] ${c}`)
-    .join("\n\n");
+  const context = formatContext(chunks);
 
   const systemPrompt = `You are a clinical genomics assistant helping interpret NGS quality reports.
 Answer the question using only the provided context. Be concise and precise.
 If the context doesn't contain enough information, say so clearly.
+Every factual claim based on retrieved context must include one or more inline citation markers like [1] or [1][3].
+Use only the citation numbers provided in the context. Do not invent citation numbers.
+End every answer with a "## Sources" section listing only the cited sources you actually used.
+For each source, copy the citation label from the matching context block, for example:
+[1] report.pdf, page 4, sample SG222-LPA, table coverage
 Format answers in clean GitHub-flavored Markdown:
 - Use short headings for sections.
 - Use **bold** for important findings, gene names, and warnings.
