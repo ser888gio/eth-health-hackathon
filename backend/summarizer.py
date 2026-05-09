@@ -55,6 +55,12 @@ def _strip_fences(raw: str) -> str:
         raw = raw.split("```")[1]
         if raw.startswith("json"):
             raw = raw[4:]
+        raw = raw.rstrip("`").strip()
+    # Extract just the JSON object in case there's surrounding text
+    start = raw.find("{")
+    end = raw.rfind("}") + 1
+    if start != -1 and end > start:
+        raw = raw[start:end]
     return raw.strip()
 
 
@@ -74,7 +80,7 @@ def summarize(report: dict, audience: str = "lab") -> dict:
         contents=user_prompt,
         config=types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPTS[audience],
-            max_output_tokens=1024,
+            max_output_tokens=2048,
             temperature=0.3,
         ),
     )

@@ -56,6 +56,13 @@ def _strip_fences(raw: str) -> str:
         raw = raw.split("```")[1]
         if raw.startswith("json"):
             raw = raw[4:]
+        raw = raw.rstrip("`").strip()
+    # Extract outermost JSON array or object
+    for open_ch, close_ch in [("[", "]"), ("{", "}")]:
+        start = raw.find(open_ch)
+        end = raw.rfind(close_ch) + 1
+        if start != -1 and end > start:
+            return raw[start:end]
     return raw.strip()
 
 
@@ -71,12 +78,16 @@ def generate_script(summary: dict, audience: str = "lab") -> list[dict]:
         contents=user_prompt,
         config=types.GenerateContentConfig(
             system_instruction=SCRIPT_SYSTEM[audience],
-            max_output_tokens=2048,
+            max_output_tokens=3000,
             temperature=0.7,
         ),
     )
 
-    raw = _strip_fences(response.text)
+    text = response.text or ""
+    if not text.strip():
+        raise RuntimeError(f"Empty response from model. Finish reason: {response.candidates[0].finish_reason if response.candidates else 'unknown'}")
+
+    raw = _strip_fences(text)
     return json.loads(raw)
 
 
