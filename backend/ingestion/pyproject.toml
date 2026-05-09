@@ -1,0 +1,14 @@
+[project]
+name = "ingestion"
+version = "0.1.0"
+description = "RAG ingestion pipeline for txt files into pgvector"
+requires-python = ">=3.12"
+dependencies = [
+    "sentence-transformers>=3.0",
+    "torch>=2.0",
+    "psycopg2-binary>=2.9",
+    "python-dotenv>=1.0",
+    "google-genai>=2.0.1",
+    "pandas>=2.0",
+    "pyarrow>=14.0",
+]
