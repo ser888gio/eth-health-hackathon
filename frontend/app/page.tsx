@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import ChatPage from "./Chatbot";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const moduleTabs = ["Overview", "Quality", "Genes", "Variants", "Report", "Chat"];
 const subnavTabs = ["Warnings", "Coverage", "Report"];
@@ -13,6 +15,8 @@ const skinnyTabs = [
   "Test Information",
   "Reported",
 ];
+
+const fallbackSampleIds = ["SG063-LPA", "SG220-LPA", "SG222-LPA", "17br088-1-Run1"];
 
 type Finding = {
   title: string;
@@ -42,11 +46,17 @@ export default function Home() {
   const [qaReport, setQaReport] = useState<QaReport | null>(null);
   const [qaStatus, setQaStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [qaError, setQaError] = useState("");
+  const [sampleIds, setSampleIds] = useState<string[]>(fallbackSampleIds);
+  const [selectedSampleId, setSelectedSampleId] = useState(fallbackSampleIds[0]);
+  const [smartSummary, setSmartSummary] = useState("");
+  const [smartStatus, setSmartStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [smartError, setSmartError] = useState("");
 
   const reportSrc = useMemo(
     () => `/api/report#toolbar=0&navpanes=0&pagemode=none&scrollbar=1&page=${page}&zoom=${zoom}`,
     [page, zoom],
   );
+  const isChat = activeModule === "Chat";
 
   const goToPage = (nextPage: number) => {
     setPage(Math.min(12, Math.max(1, nextPage)));
@@ -80,6 +90,38 @@ export default function Home() {
       });
   }, [activeDocument, qaStatus]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSampleIds() {
+      try {
+        const response = await fetch("/api/chat");
+        if (!response.ok) return;
+        const payload = await response.json();
+        const ids = Array.isArray(payload.sampleIds)
+          ? payload.sampleIds.filter((id: unknown): id is string => typeof id === "string" && id.trim().length > 0)
+          : [];
+
+        if (cancelled || ids.length === 0) return;
+        setSampleIds(ids);
+        setSelectedSampleId((current) => (ids.includes(current) ? current : ids[0]));
+      } catch {
+        // Keep fallback samples if the database is not available during local startup.
+      }
+    }
+
+    loadSampleIds();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedSampleId || isChat) return;
+    generateSmartSummary(selectedSampleId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSampleId, isChat]);
+
   const regenerateQaReport = () => {
     setQaStatus("loading");
     setQaError("");
@@ -101,7 +143,48 @@ export default function Home() {
       });
   };
 
-  const isChat = activeModule === "Chat";
+  async function generateSmartSummary(sampleId = selectedSampleId) {
+    if (!sampleId || smartStatus === "loading") return;
+
+    setSmartStatus("loading");
+    setSmartError("");
+    setSmartSummary("");
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          intent: "smart-case-summary",
+          sampleId,
+          message:
+            `Create a Smart Case Summary for sample ${sampleId}: a fast triage overview for the analysis index page. ` +
+            "Return 4-5 bullets covering readiness, key QA metrics, warnings/coverage risks, and the next review step.",
+        }),
+      });
+
+      if (!response.ok || !response.body) {
+        const payload = await response.json().catch(() => ({ error: "Unable to generate Smart Case Summary" }));
+        throw new Error(payload.error || "Unable to generate Smart Case Summary");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        accumulated += decoder.decode(value, { stream: true });
+        setSmartSummary(accumulated);
+      }
+
+      setSmartStatus("ready");
+    } catch (error) {
+      setSmartError(error instanceof Error ? error.message : "Unable to generate Smart Case Summary");
+      setSmartStatus("error");
+    }
+  }
 
   return (
     <>
@@ -255,6 +338,16 @@ export default function Home() {
               </button>
             </section>
 
+            <SmartCaseSummary
+              sampleIds={sampleIds}
+              selectedSampleId={selectedSampleId}
+              status={smartStatus}
+              summary={smartSummary}
+              error={smartError}
+              onSampleChange={setSelectedSampleId}
+              onRegenerate={() => generateSmartSummary(selectedSampleId)}
+            />
+
             <section className="viewer-shell">
               {activeDocument === "sample" ? (
                 <object
@@ -279,6 +372,62 @@ export default function Home() {
         )}
       </main>
     </>
+  );
+}
+
+function SmartCaseSummary({
+  sampleIds,
+  selectedSampleId,
+  status,
+  summary,
+  error,
+  onSampleChange,
+  onRegenerate,
+}: {
+  sampleIds: string[];
+  selectedSampleId: string;
+  status: "idle" | "loading" | "ready" | "error";
+  summary: string;
+  error: string;
+  onSampleChange: (sampleId: string) => void;
+  onRegenerate: () => void;
+}) {
+  return (
+    <section className="smart-summary" aria-label="Smart Case Summary">
+      <div className="smart-summary-header">
+        <div>
+          <p>Summary</p>
+          <h2>Smart Case Summary</h2>
+        </div>
+        <div className="smart-summary-actions">
+          <select
+            value={selectedSampleId}
+            onChange={(event) => onSampleChange(event.target.value)}
+            disabled={status === "loading" || sampleIds.length === 0}
+            aria-label="Sample ID"
+          >
+            {sampleIds.map((id) => (
+              <option value={id} key={id}>
+                {id}
+              </option>
+            ))}
+          </select>
+          <button type="button" onClick={onRegenerate} disabled={status === "loading" || sampleIds.length === 0}>
+            {status === "loading" ? "Generating..." : "Regenerate"}
+          </button>
+        </div>
+      </div>
+
+      <div className="smart-summary-body">
+        {status === "loading" ? <p className="smart-summary-muted">Generating fast triage bullets...</p> : null}
+        {status === "error" ? <p className="smart-summary-error">{error}</p> : null}
+        {summary ? (
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{summary}</ReactMarkdown>
+        ) : status === "idle" ? (
+          <p className="smart-summary-muted">Select a sample to generate a 4-5 bullet triage overview.</p>
+        ) : null}
+      </div>
+    </section>
   );
 }
 

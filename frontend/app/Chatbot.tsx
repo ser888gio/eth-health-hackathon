@@ -16,6 +16,11 @@ type Conversation = {
   messages: Message[];
 };
 
+type SendOptions = {
+  sampleId?: string;
+  intent?: "qa-summary";
+};
+
 type TaskTargetType = "sample" | "gene";
 
 type TodoTask = {
@@ -37,7 +42,8 @@ const TODO_STORAGE_KEY = "clinical-chat-tasks-v1";
 const DEFAULT_SEVERITY = 3;
 const SEVERITY_OPTIONS = [1, 2, 3, 4, 5];
 
-const SAMPLE_IDS = ["SG063-LPA", "SG220-LPA", "17br088-1-Run1"];
+const FALLBACK_SAMPLE_IDS = ["SG063-LPA", "SG220-LPA", "SG222-LPA", "17br088-1-Run1"];
+const SAMPLE_IDS = FALLBACK_SAMPLE_IDS;
 const SAMPLE_ID_SET = new Set(SAMPLE_IDS.map((id) => id.toLowerCase()));
 const COMMON_TOKEN_SET = new Set([
   "AI",
@@ -61,7 +67,7 @@ const COMMON_TOKEN_SET = new Set([
   "URL",
   "VAF",
 ]);
-const ID_PATTERN = /(SG063-LPA|SG220-LPA|17br088-1-Run1|\b[A-Z][A-Z0-9]{1,9}\b)/g;
+const ID_PATTERN = /(SG063-LPA|SG220-LPA|SG222-LPA|17br088-1-Run1|\b[A-Z][A-Z0-9]{1,9}\b)/g;
 
 const SUGGESTIONS = [
   "Compare samples SG063-LPA, SG220-LPA, and 17br088-1-Run1.",
@@ -279,6 +285,8 @@ export default function ChatPage() {
   const [exportStatus, setExportStatus] = useState("");
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [sampleIds, setSampleIds] = useState<string[]>(FALLBACK_SAMPLE_IDS);
+  const [selectedSampleId, setSelectedSampleId] = useState(FALLBACK_SAMPLE_IDS[0]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -292,6 +300,32 @@ export default function ChatPage() {
   useEffect(() => {
     inputRef.current?.focus();
   }, [activeId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSampleIds() {
+      try {
+        const res = await fetch("/api/chat", { method: "GET" });
+        if (!res.ok) return;
+        const payload = await res.json();
+        const ids = Array.isArray(payload.sampleIds)
+          ? payload.sampleIds.filter((id: unknown): id is string => typeof id === "string" && id.trim().length > 0)
+          : [];
+        if (cancelled || ids.length === 0) return;
+
+        setSampleIds(ids);
+        setSelectedSampleId((current) => (ids.includes(current) ? current : ids[0]));
+      } catch {
+        // Keep the fallback IDs when the database is not available yet.
+      }
+    }
+
+    loadSampleIds();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -479,7 +513,7 @@ export default function ChatPage() {
     setExportStatus("Calendar task file exported.");
   }
 
-  async function send(text?: string) {
+  async function send(text?: string, options: SendOptions = {}) {
     const message = (text ?? input).trim();
     if (!message || busy) return;
 
@@ -503,7 +537,7 @@ export default function ChatPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, ...options }),
       });
 
       if (!res.ok || !res.body) {
@@ -563,6 +597,15 @@ export default function ChatPage() {
     const el = e.target;
     el.style.height = "auto";
     el.style.height = Math.min(el.scrollHeight, 160) + "px";
+  }
+
+  function generateQaSummary() {
+    const sampleId = selectedSampleId || sampleIds[0];
+    if (!sampleId) return;
+    send(
+      `Create a concise QA report summary for sample ${sampleId}. Include overall status, key QC metrics, coverage concerns, mapping/on-target quality, duplication or soft-clipping concerns, and recommended follow-up actions.`,
+      { intent: "qa-summary", sampleId },
+    );
   }
 
   return (
@@ -628,6 +671,26 @@ export default function ChatPage() {
                 </button>
               ))}
             </div>
+            <div className="gpt-sample-summary" aria-label="Create QA report summary">
+              <label htmlFor="qa-sample-select">QA report summary</label>
+              <div className="gpt-sample-summary-row">
+                <select
+                  id="qa-sample-select"
+                  value={selectedSampleId}
+                  onChange={(event) => setSelectedSampleId(event.target.value)}
+                  disabled={busy || sampleIds.length === 0}
+                >
+                  {sampleIds.map((id) => (
+                    <option value={id} key={id}>
+                      {id}
+                    </option>
+                  ))}
+                </select>
+                <button type="button" onClick={generateQaSummary} disabled={busy || sampleIds.length === 0}>
+                  Generate summary
+                </button>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="gpt-messages">
@@ -657,6 +720,24 @@ export default function ChatPage() {
         )}
 
         <div className="gpt-input-wrap">
+          {messages.length > 0 ? (
+            <div className="gpt-inline-summary" aria-label="Create QA report summary">
+              <select
+                value={selectedSampleId}
+                onChange={(event) => setSelectedSampleId(event.target.value)}
+                disabled={busy || sampleIds.length === 0}
+              >
+                {sampleIds.map((id) => (
+                  <option value={id} key={id}>
+                    {id}
+                  </option>
+                ))}
+              </select>
+              <button type="button" onClick={generateQaSummary} disabled={busy || sampleIds.length === 0}>
+                QA summary
+              </button>
+            </div>
+          ) : null}
           <div className="gpt-input-box">
             <textarea
               ref={inputRef}

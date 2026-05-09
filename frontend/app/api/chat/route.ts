@@ -11,6 +11,7 @@ const DB_CONFIG = {
 };
 
 const TOP_K = 5;
+const SAMPLE_SUMMARY_LIMIT = 24;
 
 type CitationMetadata = Record<string, unknown>;
 
@@ -22,6 +23,14 @@ type RetrievedChunk = {
   chunkIndex: number | null;
   rank: number;
 };
+
+type ChatRequestBody = {
+  message?: unknown;
+  sampleId?: unknown;
+  intent?: unknown;
+};
+
+type ChatIntent = "qa-summary" | "smart-case-summary" | null;
 
 function getAI() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -122,19 +131,89 @@ async function retrieveContext(embedding: number[]): Promise<RetrievedChunk[]> {
   }
 }
 
-async function generateAnswer(question: string, chunks: RetrievedChunk[]): Promise<ReadableStream<Uint8Array>> {
+async function listSampleIds(): Promise<string[]> {
+  const client = new Client(DB_CONFIG);
+  await client.connect();
+  try {
+    await ensureCitationColumns(client);
+    const res = await client.query(
+      `SELECT DISTINCT metadata->>'sample_id' AS sample_id
+       FROM documents
+       WHERE metadata->>'sample_id' IS NOT NULL
+         AND metadata->>'sample_id' <> ''
+       ORDER BY sample_id`
+    );
+    return res.rows.map((row: { sample_id: string }) => row.sample_id);
+  } finally {
+    await client.end();
+  }
+}
+
+async function retrieveSampleContext(sampleId: string): Promise<RetrievedChunk[]> {
+  const client = new Client(DB_CONFIG);
+  await client.connect();
+  try {
+    await ensureCitationColumns(client);
+    const res = await client.query(
+      `SELECT id, source, content, metadata, chunk_index
+       FROM documents
+       WHERE metadata->>'sample_id' = $1
+       ORDER BY
+         COALESCE(metadata->>'report_type', ''),
+         COALESCE(chunk_index, 0),
+         id
+       LIMIT $2`,
+      [sampleId, SAMPLE_SUMMARY_LIMIT]
+    );
+    return res.rows.map(
+      (
+        r: {
+          id: number;
+          source: string | null;
+          content: string;
+          metadata: unknown;
+          chunk_index: number | null;
+        },
+        i: number
+      ) => ({
+        id: r.id,
+        source: r.source,
+        content: r.content,
+        metadata: cleanMetadata(r.metadata),
+        chunkIndex: r.chunk_index,
+        rank: i + 1,
+      })
+    );
+  } finally {
+    await client.end();
+  }
+}
+
+async function generateAnswer(
+  question: string,
+  chunks: RetrievedChunk[],
+  intent: ChatIntent = null
+): Promise<ReadableStream<Uint8Array>> {
   const anthropic = getAI();
 
   const context = formatContext(chunks);
+  const responseInstructions =
+    intent === "smart-case-summary"
+      ? `Produce a Smart Case Summary for fast triage.
+Return exactly 4-5 Markdown bullets and nothing else.
+Each bullet must be one sentence, clinically useful, and include inline citation markers for factual claims.
+Cover overall case/readiness, strongest QC signals, concerning warnings or coverage gaps, and recommended next review step.
+Do not include a "Sources" section.`
+      : `End every answer with a "## Sources" section listing only the cited sources you actually used.
+For each source, copy the citation label from the matching context block, for example:
+[1] report.pdf, page 4, sample SG222-LPA, table coverage`;
 
   const systemPrompt = `You are a clinical genomics assistant helping interpret NGS quality reports.
 Answer the question using only the provided context. Be concise and precise.
 If the context doesn't contain enough information, say so clearly.
 Every factual claim based on retrieved context must include one or more inline citation markers like [1] or [1][3].
 Use only the citation numbers provided in the context. Do not invent citation numbers.
-End every answer with a "## Sources" section listing only the cited sources you actually used.
-For each source, copy the citation label from the matching context block, for example:
-[1] report.pdf, page 4, sample SG222-LPA, table coverage
+${responseInstructions}
 Format answers in clean GitHub-flavored Markdown:
 - Use short headings for sections.
 - Use **bold** for important findings, gene names, and warnings.
@@ -177,11 +256,26 @@ ${context}`;
   return stream;
 }
 
+export async function GET() {
+  try {
+    const sampleIds = await listSampleIds();
+    return NextResponse.json({ sampleIds });
+  } catch (err) {
+    console.error("Sample ID listing error:", err);
+    return NextResponse.json({ sampleIds: [] }, { status: 200 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   let question: string;
+  let sampleId: string | null = null;
+  let intent: ChatIntent = null;
   try {
-    const body = await req.json();
-    question = (body.message || "").trim();
+    const body = (await req.json()) as ChatRequestBody;
+    question = typeof body.message === "string" ? body.message.trim() : "";
+    sampleId = typeof body.sampleId === "string" ? body.sampleId.trim() : null;
+    const rawIntent = typeof body.intent === "string" ? body.intent.trim() : null;
+    intent = rawIntent === "qa-summary" || rawIntent === "smart-case-summary" ? rawIntent : null;
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
@@ -191,9 +285,16 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const embedding = await embedQuery(question);
-    const chunks = await retrieveContext(embedding);
-    const stream = await generateAnswer(question, chunks);
+    const chunks =
+      (intent === "qa-summary" || intent === "smart-case-summary") && sampleId
+        ? await retrieveSampleContext(sampleId)
+        : await retrieveContext(await embedQuery(question));
+
+    if ((intent === "qa-summary" || intent === "smart-case-summary") && chunks.length === 0) {
+      return NextResponse.json({ error: `No QA context found for sample ${sampleId}` }, { status: 404 });
+    }
+
+    const stream = await generateAnswer(question, chunks, intent);
 
     return new Response(stream, {
       headers: {
