@@ -313,7 +313,8 @@ def embed_chunks(chunks: list[dict]) -> list[dict]:
     try:
         from sentence_transformers import SentenceTransformer
     except ImportError:
-        import subprocess, sys
+        import subprocess
+        import sys
         subprocess.check_call([sys.executable, "-m", "pip", "install", "sentence-transformers"])
         from sentence_transformers import SentenceTransformer
 
@@ -339,11 +340,11 @@ def process_pdf(pdf_path: str) -> list[dict]:
     parsed = parse_pdf(pdf_path)
     print(f"      {len(parsed['samples'])} samples, {len(parsed['low_coverage_regions'])} low coverage regions")
 
-    print(f"[2/3] Chunking")
+    print("[2/3] Chunking")
     chunks = make_chunks(parsed)
     print(f"      {len(chunks)} chunks created")
 
-    print(f"[3/3] Embedding")
+    print("[3/3] Embedding")
     chunks = embed_chunks(chunks)
 
     return chunks
