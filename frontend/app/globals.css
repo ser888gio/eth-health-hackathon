@@ -2117,6 +2117,63 @@ a {
   flex: 0 1 220px;
 }
 
+.gpt-inline-audio {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid #d7ddeb;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.gpt-inline-audio div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.gpt-inline-audio strong {
+  color: #273149;
+  font-size: 13px;
+}
+
+.gpt-inline-audio span,
+.gpt-inline-audio p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.gpt-inline-audio button {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 7px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.gpt-inline-audio button:hover:not(:disabled) {
+  background: var(--blue-dark);
+}
+
+.gpt-inline-audio button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gpt-inline-audio audio,
+.gpt-inline-audio p {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
 .gpt-input-box {
   display: flex;
   align-items: flex-end;

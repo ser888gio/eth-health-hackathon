@@ -512,6 +512,9 @@ export default function ChatPage() {
   const [exportStatus, setExportStatus] = useState("");
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [audioStatus, setAudioStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [audioUrl, setAudioUrl] = useState("");
+  const [audioError, setAudioError] = useState("");
   const [sampleIds, setSampleIds] = useState<string[]>(FALLBACK_SAMPLE_IDS);
   const [selectedSampleId, setSelectedSampleId] = useState(FALLBACK_SAMPLE_IDS[0]);
   const [sampleMetrics, setSampleMetrics] = useState<SampleMetric[]>([]);
@@ -911,10 +914,54 @@ export default function ChatPage() {
   function generateQaSummary() {
     const sampleId = selectedSampleId || sampleIds[0];
     if (!sampleId) return;
+    setAudioStatus("idle");
+    setAudioUrl("");
+    setAudioError("");
     send(
       `Create a concise QA report summary for sample ${sampleId}. Include overall status, key QC metrics, coverage concerns, mapping/on-target quality, duplication or soft-clipping concerns, and recommended follow-up actions.`,
       { intent: "qa-summary", sampleId },
     );
+  }
+
+  async function generateSummaryAudio() {
+    if (audioStatus === "loading") return;
+
+    const summaryText = [...active.messages]
+      .reverse()
+      .find((message) => message.role === "assistant" && !message.streaming && message.text.trim().length > 0)
+      ?.text.trim();
+
+    if (!summaryText) {
+      setAudioStatus("error");
+      setAudioError("Generate a QA summary before creating audio.");
+      return;
+    }
+
+    setAudioStatus("loading");
+    setAudioError("");
+
+    try {
+      const res = await fetch("/api/summary-audio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ summary: summaryText }),
+      });
+      const payload = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(typeof payload.error === "string" ? payload.error : "Unable to generate audio");
+      }
+
+      if (typeof payload.audioUrl !== "string" || payload.audioUrl.length === 0) {
+        throw new Error("Audio URL missing from audio response");
+      }
+
+      setAudioUrl(payload.audioUrl);
+      setAudioStatus("ready");
+    } catch (error) {
+      setAudioStatus("error");
+      setAudioError(error instanceof Error ? error.message : "Unable to generate audio");
+    }
   }
 
   function applyDashboardSuggestion() {
@@ -1063,6 +1110,19 @@ export default function ChatPage() {
               <button type="button" onClick={generateQaSummary} disabled={busy || sampleIds.length === 0}>
                 QA summary
               </button>
+            </div>
+          ) : null}
+          {messages.length > 0 && active.qaSummaryGenerated ? (
+            <div className="gpt-inline-audio" aria-label="Generate audio from summary">
+              <div>
+                <strong>ElevenLabs audio</strong>
+                <span>Generate an audio briefing from the QA summary.</span>
+              </div>
+              <button type="button" onClick={generateSummaryAudio} disabled={audioStatus === "loading"}>
+                {audioStatus === "loading" ? "Generating..." : "Generate audio"}
+              </button>
+              {audioStatus === "ready" && audioUrl ? <audio controls src={audioUrl} /> : null}
+              {audioStatus === "error" ? <p>{audioError}</p> : null}
             </div>
           ) : null}
           <div className="gpt-input-box">

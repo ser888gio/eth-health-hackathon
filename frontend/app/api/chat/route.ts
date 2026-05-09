@@ -47,6 +47,26 @@ function getAI() {
   return new Anthropic({ apiKey });
 }
 
+function errorCode(error: unknown): string | null {
+  return error && typeof error === "object" && "code" in error ? String(error.code) : null;
+}
+
+function chatErrorMessage(error: unknown): string {
+  const code = errorCode(error);
+  const message = error instanceof Error ? error.message : "";
+
+  if (code === "ECONNREFUSED" || message.includes("ECONNREFUSED")) {
+    if (message.includes(":8000")) return "Embed server is not running on localhost:8000.";
+    if (message.includes(":5433")) return "Postgres is not running on localhost:5433.";
+    return "A required local service is not running.";
+  }
+
+  if (message.includes("Embed server error")) return message;
+  if (message.includes("ANTHROPIC_API_KEY")) return "Anthropic API key is not configured.";
+
+  return "Failed to generate response";
+}
+
 async function embedQuery(query: string): Promise<number[]> {
   const embedUrl = process.env.EMBED_SERVER_URL || "http://localhost:8000/embed";
   const res = await fetch(embedUrl, {
@@ -462,6 +482,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error("Chat error:", err);
-    return NextResponse.json({ error: "Failed to generate response" }, { status: 500 });
+    return NextResponse.json({ error: chatErrorMessage(err) }, { status: 500 });
   }
 }

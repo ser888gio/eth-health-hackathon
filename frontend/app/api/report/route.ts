@@ -4,7 +4,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-const reportPath = path.join(process.cwd(), "..", "backend", "summarisation", "report.pdf");
+const backendPath = path.join(process.cwd(), "..", "backend");
+const reportPathCandidates = [
+  path.join(backendPath, "summarisation", "report.pdf"),
+  path.join(backendPath, "ingestion", "pdf-files", "pdf", "report.pdf"),
+];
 
 const baseHeaders = {
   "Content-Type": "application/pdf",
@@ -13,8 +17,31 @@ const baseHeaders = {
   "Cache-Control": "no-store",
 };
 
+async function resolveReport() {
+  for (const reportPath of reportPathCandidates) {
+    try {
+      const { size } = await stat(reportPath);
+      return { reportPath, size };
+    } catch (error) {
+      if (error instanceof Error && "code" in error && error.code === "ENOENT") continue;
+      throw error;
+    }
+  }
+
+  return null;
+}
+
 export async function GET(request: NextRequest) {
-  const { size } = await stat(reportPath);
+  const reportFile = await resolveReport();
+
+  if (!reportFile) {
+    return NextResponse.json(
+      { error: "report.pdf was not found in backend/summarisation or backend/ingestion/pdf-files/pdf" },
+      { status: 404 },
+    );
+  }
+
+  const { reportPath, size } = reportFile;
   const range = request.headers.get("range");
 
   if (range) {
@@ -56,7 +83,13 @@ export async function GET(request: NextRequest) {
 }
 
 export async function HEAD() {
-  const { size } = await stat(reportPath);
+  const reportFile = await resolveReport();
+
+  if (!reportFile) {
+    return new NextResponse(null, { status: 404 });
+  }
+
+  const { size } = reportFile;
 
   return new NextResponse(null, {
     headers: {

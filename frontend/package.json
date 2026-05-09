@@ -1,6 +1,8 @@
 {
   "scripts": {
     "dev": "next dev",
+    "clean": "node -e \"require('fs').rmSync('.next', { recursive: true, force: true })\"",
+    "dev:clean": "npm run clean && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
