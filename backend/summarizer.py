@@ -7,7 +7,7 @@ from google.genai import types
 
 load_dotenv()
 
-MODEL = "gemini-2.5-flash-preview-05-20"
+MODEL = "gemini-3-flash-preview"
 
 SYSTEM_PROMPTS = {
     "lab": (
