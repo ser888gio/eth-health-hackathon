@@ -239,9 +239,8 @@ function classifySample(metric: SampleMetric, thresholds: DashboardThresholds): 
     onTargetPercent === null ||
     targetRegionValue === null ||
     targetRegionCoveragePercent === null;
-  const hasConflict = Boolean(metric.conflicts?.length);
 
-  if (missingRequired || hasConflict) return "conflicting";
+  if (missingRequired) return "conflicting";
   if (
     coveragePercent === null ||
     onTargetPercent === null ||
@@ -277,31 +276,33 @@ function classifySample(metric: SampleMetric, thresholds: DashboardThresholds): 
 
 function parseDashboardSuggestion(prompt: string, thresholds: DashboardThresholds): DashboardThresholds | null {
   const text = prompt.toLowerCase();
-  const percentPattern = "(?:over|above|at least)\\s+(\\d+(?:\\.\\d+)?)\\s*(?:percent|%)?";
-  const underPattern = "(?:under|below|less than)\\s+(\\d+(?:\\.\\d+)?)";
+  const numberPattern = "(\\d+(?:\\.\\d+)?)";
+  const minimumPattern = `(?:over|above|at least|greater than|minimum|min|threshold(?:\\s+to)?|to|is|=|>=|>)\\s*${numberPattern}\\s*(?:percent|%)?`;
+  const maximumPattern = `(?:under|below|less than|maximum|max|threshold(?:\\s+to)?|to|is|=|<=|<)\\s*${numberPattern}`;
   const next = { ...thresholds };
   let changed = false;
 
-  const targetRegionCoverage = text.match(new RegExp(`target\\s+region\\s+coverage\\s+${percentPattern}`));
+  const targetRegionCoverage = text.match(new RegExp(`(?:target\\s+region\\s+coverage|trc)\\s+${minimumPattern}`));
   if (targetRegionCoverage) {
     next.targetRegionCoveragePercent = Number(targetRegionCoverage[1]);
     changed = true;
   }
 
-  const onTarget = text.match(new RegExp(`on[-\\s]?target\\s+${percentPattern}`));
+  const onTarget = text.match(new RegExp(`(?:on[-\\s]?target|mapping|map)\\s+${minimumPattern}`));
   if (onTarget) {
     next.onTargetPercent = Number(onTarget[1]);
     changed = true;
   }
 
-  const targetRegionValue = text.match(new RegExp(`target\\s+region\\s+${underPattern}`));
-  if (targetRegionValue && !/coverage/.test(text.slice(Math.max(0, targetRegionValue.index ?? 0), (targetRegionValue.index ?? 0) + 32))) {
+  const targetRegionValue = text.match(new RegExp(`(?:low\\s+coverage\\s+region\\s+count|target\\s+region|target)\\s+${maximumPattern}`));
+  if (targetRegionValue && !/coverage\s+(?:over|above|at least|greater than|minimum|min|threshold|to|is|=|>=|>)/.test(text.slice(Math.max(0, targetRegionValue.index ?? 0), (targetRegionValue.index ?? 0) + 48))) {
     next.targetRegionValue = Number(targetRegionValue[1]);
     changed = true;
   }
 
-  const coverage = text.match(new RegExp(`(?:^|\\b)coverage\\s+${percentPattern}`));
-  if (coverage && !/on[-\s]?target\s+/.test(text) && !/target\s+region\s+coverage/.test(text)) {
+  const coverage = text.match(new RegExp(`(?:^|\\b)coverage\\s+${minimumPattern}`));
+  const coveragePrefix = text.slice(Math.max(0, (coverage?.index ?? 0) - 20), coverage?.index ?? 0);
+  if (coverage && !/target\s+region\s+$/.test(coveragePrefix)) {
     next.coveragePercent = Number(coverage[1]);
     changed = true;
   }
@@ -1065,6 +1066,13 @@ export default function ChatPage() {
                 </button>
               </div>
             </div>
+            <DashboardSuggestionForm
+              suggestionInput={suggestionInput}
+              suggestionStatus={suggestionStatus}
+              onSuggestionInput={setSuggestionInput}
+              onApplySuggestion={applyDashboardSuggestion}
+              onResetThresholds={resetDashboardThresholds}
+            />
           </div>
         ) : (
           <div className="gpt-messages">
@@ -1265,14 +1273,50 @@ export default function ChatPage() {
           groups={dashboardGroups}
           status={dashboardStatus}
           thresholds={dashboardThresholds}
-          suggestionInput={suggestionInput}
-          suggestionStatus={suggestionStatus}
-          onSuggestionInput={setSuggestionInput}
-          onApplySuggestion={applyDashboardSuggestion}
-          onResetThresholds={resetDashboardThresholds}
         />
       </aside>
     </div>
+  );
+}
+
+function DashboardSuggestionForm({
+  suggestionInput,
+  suggestionStatus,
+  onSuggestionInput,
+  onApplySuggestion,
+  onResetThresholds,
+}: {
+  suggestionInput: string;
+  suggestionStatus: string;
+  onSuggestionInput: (value: string) => void;
+  onApplySuggestion: () => void;
+  onResetThresholds: () => void;
+}) {
+  return (
+    <form
+      className="gpt-dashboard-suggestion"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onApplySuggestion();
+      }}
+    >
+      <label htmlFor="dashboard-suggestion">Suggestion</label>
+      <div>
+        <input
+          id="dashboard-suggestion"
+          value={suggestionInput}
+          placeholder="coverage over 85 percent"
+          onChange={(event) => onSuggestionInput(event.target.value)}
+        />
+        <button type="submit" disabled={!suggestionInput.trim()}>
+          Apply
+        </button>
+      </div>
+      <button className="gpt-dashboard-reset" type="button" onClick={onResetThresholds}>
+        Reset thresholds
+      </button>
+      {suggestionStatus ? <p>{suggestionStatus}</p> : null}
+    </form>
   );
 }
 
@@ -1280,20 +1324,10 @@ function SampleDashboard({
   groups,
   status,
   thresholds,
-  suggestionInput,
-  suggestionStatus,
-  onSuggestionInput,
-  onApplySuggestion,
-  onResetThresholds,
 }: {
   groups: Record<DashboardCategory, SampleMetric[]>;
   status: "loading" | "ready" | "error";
   thresholds: DashboardThresholds;
-  suggestionInput: string;
-  suggestionStatus: string;
-  onSuggestionInput: (value: string) => void;
-  onApplySuggestion: () => void;
-  onResetThresholds: () => void;
 }) {
   const total = groups.good.length + groups.bad.length + groups.conflicting.length;
 
@@ -1316,31 +1350,6 @@ function SampleDashboard({
         <span>Target &lt;= {thresholds.targetRegionValue}</span>
         <span>Target cov &gt;= {thresholds.targetRegionCoveragePercent}%</span>
       </div>
-
-      <form
-        className="gpt-dashboard-suggestion"
-        onSubmit={(event) => {
-          event.preventDefault();
-          onApplySuggestion();
-        }}
-      >
-        <label htmlFor="dashboard-suggestion">Suggestion</label>
-        <div>
-          <input
-            id="dashboard-suggestion"
-            value={suggestionInput}
-            placeholder="coverage over 85 percent"
-            onChange={(event) => onSuggestionInput(event.target.value)}
-          />
-          <button type="submit" disabled={!suggestionInput.trim()}>
-            Apply
-          </button>
-        </div>
-        <button className="gpt-dashboard-reset" type="button" onClick={onResetThresholds}>
-          Reset thresholds
-        </button>
-        {suggestionStatus ? <p>{suggestionStatus}</p> : null}
-      </form>
 
       {status === "loading" ? <p className="gpt-dashboard-empty">Loading sample metrics...</p> : null}
       {status === "error" ? <p className="gpt-dashboard-empty error">Sample metrics are unavailable.</p> : null}

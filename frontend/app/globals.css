@@ -1441,12 +1441,15 @@ a {
 }
 
 .gpt-dashboard-suggestion {
+  width: min(580px, 100%);
   display: grid;
   gap: 7px;
+  margin-top: 6px;
   padding: 10px;
   border: 1px solid #dfe3ee;
   border-radius: 8px;
   background: #fbfcff;
+  text-align: left;
 }
 
 .gpt-dashboard-suggestion label {

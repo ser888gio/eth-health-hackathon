@@ -213,7 +213,12 @@ function addMetricValue(
   if (current !== null && Math.abs(current - value) > 0.01) {
     sample.conflicts.push(`${key} has conflicting values (${current} and ${value})`);
   }
-  sample[key] = current === null ? value : Math.max(current, value);
+  sample[key] =
+    current === null
+      ? value
+      : key === "targetRegionValue"
+        ? Math.max(current, value)
+        : Math.min(current, value);
   metrics.set(sampleId, sample);
 }
 
