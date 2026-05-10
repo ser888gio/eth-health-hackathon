@@ -73,7 +73,7 @@ The application combines a modern clinical frontend, retrieval-augmented generat
 
 **Stack:**
 
-- Frontend: Next.js 15, React, TypeScript
+- Frontend: Lovable-assisted UI prototyping, Next.js 15, React, TypeScript
 - AI: Anthropic Claude (`claude-sonnet-4-6`), Google Gemini fallback
 - TTS: ElevenLabs
 - Embeddings: `sentence-transformers/all-mpnet-base-v2` with 768-dimensional vectors
